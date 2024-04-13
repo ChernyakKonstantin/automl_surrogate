@@ -14,7 +14,6 @@ import automl_surrogate.metrics as metrics_module
 import torch.nn.functional as F
 from typing import Iterable
 
-
 class HeteroPipelineRankingSurrogateModel(LightningModule):
     # Same hypothesis as in https://arxiv.org/pdf/1912.05891.pdf
     def __init__(
@@ -118,7 +117,9 @@ class HeteroPipelineRankingSurrogateModel(LightningModule):
         if "precision" in self.validation_metrics:
             metric_fn = getattr(metrics_module, "precision")
             self.log(f"{prefix}_precision", metric_fn(y, scores))
-
+        if "kendalltau" in self.validation_metrics:
+            metric_fn = getattr(metrics_module, "kendalltau")
+            self.log(f"{prefix}_kendalltau", metric_fn(y.cpu(), scores.cpu()))
 
     def validation_step(
         self,

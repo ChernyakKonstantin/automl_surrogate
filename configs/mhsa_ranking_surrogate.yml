@@ -12,6 +12,7 @@ model:
   validation_metrics:
     - "ndcg"
     - "precision"
+    - "kendalltau"
 
   class: "HeteroPipelineRankingSurrogateModel"
   model_parameters:
