@@ -11,6 +11,7 @@ from automl_surrogate.layers.encoders import GraphTransformer, SimpleGNNEncoder
 from automl_surrogate.models.heterogeneous.node_embedder import build_node_embedder
 import automl_surrogate.losses as losses_module
 import automl_surrogate.metrics as metrics_module
+import torch.nn.functional as F
 from typing import Iterable
 
 
@@ -27,7 +28,7 @@ class HeteroPipelineRankingSurrogateModel(LightningModule):
         super().__init__()
         self.lr = lr
         self.weight_decay = weight_decay
-        self.loss_fn = getattr(losses_module, loss_fn)
+        self.loss_name = loss_fn
         self.validation_metrics = validation_metrics
 
         self.node_embedder = build_node_embedder(model_parameters["node_embedder"])
@@ -91,7 +92,14 @@ class HeteroPipelineRankingSurrogateModel(LightningModule):
     ) -> Tensor:
         heterogen_pipelines, y = batch
         scores = self.forward(heterogen_pipelines)
-        loss = self.loss_fn(scores, y)
+        if self.loss_name == "kl_div":
+            loss = F.kl_div(
+                torch.log_softmax(scores, dim=1),
+                torch.log_softmax(y, dim=1),
+                log_target=True,
+            )
+        else:
+            loss = self.loss_fn(scores, y)
         self.log("train_loss", loss)
         return loss
 
