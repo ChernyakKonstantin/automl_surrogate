@@ -54,11 +54,11 @@ dataset_params:
   root: "/home/cherniak/itmo_job/GAMLET/data/no_meta_features_and_fedot_pipelines_raw"
   train_dataset:
     pipelines_per_step: 10
-    use_dataset_with_id: null  # Use all datasets
+    use_dataset_with_id: 27
     normalize: true
   val_dataset:
     pipelines_per_step: 10
-    use_dataset_with_id: null  # Use all datasets
+    use_dataset_with_id: 27
     normalize: true
 
 
@@ -72,7 +72,7 @@ trainer:
   # limit_val_batches: 2
 
 tensorboard_logger:
-  save_dir: "/home/cherniak/itmo_job/surrogate/experiment_logs/no_meta_features_and_fedot_pipelines_(type_and_hparams)/train_node_embedder_from_scratch/simple_graph_encoder/rank_over_10"
+  save_dir: "/home/cherniak/itmo_job/surrogate/experiment_logs/no_meta_features_and_fedot_pipelines_(type_and_hparams)/train_node_embedder_from_scratch/overfit_27th_dataset/simple_graph_encoder/rank_over_10"
   name: "mhsa"
 
 model_checkpoint_callback:
