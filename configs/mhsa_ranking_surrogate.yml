@@ -1,88 +1,73 @@
-training_method: "train_hetero_surrogate_model"
-
+training_method: train_hetero_surrogate_model
 batch_size: 1024
-
-num_dataloader_workers: 0
-
+num_dataloader_workers: 4
 model:
   weight_decay: 0.0001
   lr: 0.001
-
-  loss_fn: "kl_div"
+  loss_fn: kl_div
   validation_metrics:
-    - "ndcg"
-    - "precision"
-    - "kendalltau"
-
-  class: "HeteroPipelineRankingSurrogateModel"
+    - ndcg
+    - precision
+    - kendalltau
+  class: HeteroPipelineRankingSurrogateModel
   model_parameters:
     node_embedder:
       op_hyperparams_embedder:
-        class: "HyperparametersEmbedder"
+        class: HyperparametersEmbedder
         out_dim: 8
       op_name_embedder:
-        class: "NameEmbedder"
+        class: NameEmbedder
         out_dim: 2
       embedding_joiner:
-        class: "CatEmbeddingJoiner"
-
+        class: CatEmbeddingJoiner
     pipeline_encoder:
-      type: "simple_graph_encoder"  # graph_transformer
+      type: simple_graph_encoder
       d_model: 64
-      in_size: # The parameter is inferred
+      in_size: null
       num_heads: 8
       num_layers: 2
       dropout: 0.3
       in_embed: false
-      batch_norm: True  # If false, LayerNorm is used.
-      gnn_type: "graphsage"
-      # dim_feedforward: null  # The parameter is inferred
-      # num_class: 1
+      batch_norm: true
+      gnn_type: graphsage
       k_hop: 2
-      se: "gnn"
-      deg: null  # The parameter is inferred
-      global_pool: "mean"
-      use_edge_attr: False
-
+      se: gnn
+      deg: null
+      global_pool: mean
+      use_edge_attr: false
     mhsa_block:
       nhead: 8
       dim_feedforward: 2048
       dropout: 0.1
       num_layers: 4
-
 dataset_params:
-  root: "/home/cherniak/itmo_job/GAMLET/data/no_meta_features_and_fedot_pipelines_raw"
+  root: /home/cherniak/itmo_job/GAMLET/data/no_meta_features_and_fedot_pipelines_raw
   train_dataset:
     pipelines_per_step: 10
-    use_dataset_with_id: null  # Use all datasets
+    use_dataset_with_id: null
     normalize: true
   val_dataset:
     pipelines_per_step: 10
-    use_dataset_with_id: null  # Use all datasets
+    use_dataset_with_id: null
     normalize: true
-
-
 trainer:
-  log_every_n_steps: 1
+  log_every_n_steps: 20
   num_sanity_val_steps: 0
   max_epochs: 100
-  accelerator: "cuda"
-  devices: "auto"
-  # limit_train_batches: 2
-  # limit_val_batches: 2
-
+  accelerator: cuda
+  devices: auto
+  # check_val_every_n_epoch : null
+  # val_check_interval: 0.1
 tensorboard_logger:
-  save_dir: "/home/cherniak/itmo_job/surrogate/experiment_logs/no_meta_features_and_fedot_pipelines_(type_and_hparams)/train_node_embedder_from_scratch/simple_graph_encoder/rank_over_10"
-  name: "mhsa"
-
+  save_dir: /home/cherniak/itmo_job/surrogate/experiment_logs/no_meta_features_and_fedot_pipelines_(type_and_hparams)/train_node_embedder_from_scratch/simple_graph_encoder/rank_over_10
+  name: mhsa
 model_checkpoint_callback:
   save_top_k: 1
-  monitor: "val_ndcg"
-  mode: "max"
-  save_last: True
+  monitor: val_ndcg
+  mode: max
+  save_last: true
   every_n_epochs: 1
-
 early_stopping_callback:
-  monitor: "val_ndcg"
-  mode: "max"
+  monitor: val_ndcg
+  mode: max
   patience: 10
