@@ -56,7 +56,7 @@ class HeteroPipelineAndDatasetFeaturesDataset(Dataset):
     def __len__(self):
         return len(self.task_pipe_comb)
 
-    def _get_train_sample(self) -> Tuple[str, str, Data, float]:
+    def _get_sample(self) -> Tuple[str, str, Data, float]:
         task_id = np.random.choice(self.dataset_ids, 1).item()
         group = self.groups[task_id]
         idx1 = np.random.choice(group.index, 1).item()
@@ -99,7 +99,7 @@ class HeteroPipelineAndDatasetFeaturesDataset(Dataset):
         if self.is_val:
             return self._get_val_sample(idx)
         else:
-            return self._get_train_sample()
+            return self._get_sample()
 
 
 class HeteroPipelineDataset(Dataset):
@@ -125,7 +125,6 @@ class HeteroPipelineDataset(Dataset):
         self.pipelines_per_step = pipelines_per_step
         self.task_pipe_comb = pd.read_csv(task_pipe_comb_file)
 
-        # Uncomment for debug purpoces
         if self.use_dataset_with_id is not None:
             self.task_pipe_comb = self.task_pipe_comb[self.task_pipe_comb.task_id == use_dataset_with_id]
 
@@ -134,14 +133,11 @@ class HeteroPipelineDataset(Dataset):
         self.id2dataset = id2dataset
         self.dataset_ids = list(self.groups.keys())
         self.is_val = is_val
-        if self.is_val and self.use_dataset_with_id is None:
-            self.collate_fn = partial(self.val_collate_fn, n_pipelines=self.pipelines_per_step)
-        else:
-            self.collate_fn = partial(self.train_collate_fn, n_pipelines=self.pipelines_per_step)
+        self.collate_fn = partial(HeteroPipelineDataset.collate_fn, n_pipelines=self.pipelines_per_step)
         self.pipeline_extractor = fedot_pipeline_features_extractor.FEDOTPipelineFeaturesExtractor2(encode_type)
 
     @staticmethod
-    def train_collate_fn(
+    def collate_fn(
         batch: Sequence[Tuple[Sequence[HeterogeneousData], Sequence[float]]],
         n_pipelines: int,
     ) -> Tuple[Sequence[HeterogeneousBatch], torch.Tensor]:
@@ -150,19 +146,10 @@ class HeteroPipelineDataset(Dataset):
         # Pipes are [N_PIPES, BATCH_SIZE, N_FEATURES]
         return pipes, y
 
-    @staticmethod
-    def val_collate_fn(batch, n_pipelines: int) -> Tuple[torch.Tensor, torch.Tensor, Sequence[HeterogeneousBatch], torch.Tensor]:
-        # task_id = torch.LongTensor([b[0] for b in batch])
-        # pipe_id = torch.LongTensor([b[1] for b in batch])
-        # pipes = [HeterogeneousBatch.from_heterogeneous_data_list([b[2+i] for b in batch]) for i in range(n_pipelines)]
-        # y = torch.FloatTensor([b[2 + n_pipelines] for b in batch])
-        # return task_id, pipe_id, pipes, y
-        raise NotImplementedError()
-
     def __len__(self):
         return len(self.task_pipe_comb)
 
-    def _get_train_sample(self) -> Tuple[Sequence[HeterogeneousData], Sequence[float]]:
+    def _get_sample(self) -> Tuple[Sequence[HeterogeneousData], Sequence[float]]:
         task_id = np.random.choice(self.dataset_ids, 1).item()
         group = self.groups[task_id]
 
@@ -182,19 +169,5 @@ class HeteroPipelineDataset(Dataset):
         # Pipes are [N_PIPES, N_FEATURES]
         return pipes, metrics
 
-    def _get_val_sample(self, idx) -> Tuple[int, int, HeterogeneousData, float]:
-        # sample = self.task_pipe_comb.iloc[idx]
-        # task_id = int(sample.task_id)
-        # pipe_id = int(sample.pipeline_id)
-        # with open(self.id2pipe[pipe_id], "rb", os.O_NONBLOCK) as f:
-        #     pipe_json_string = pickle.load(f)
-        # metric = -1 * sample.metric  # In data metrics are multiplied by -1
-        # pipe = self.pipeline_extractor(pipe_json_string)
-        # return task_id, pipe_id, pipe, metric
-        raise NotImplementedError()
-
     def __getitem__(self, idx):
-        if self.is_val and self.use_dataset_with_id is None:
-            return self._get_val_sample(idx)
-        else:
-            return self._get_train_sample()
+        return self._get_sample()
