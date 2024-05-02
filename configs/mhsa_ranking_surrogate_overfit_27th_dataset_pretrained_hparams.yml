@@ -18,8 +18,10 @@ model:
   model_parameters:
     node_embedder:
       op_hyperparams_embedder:
-        class: "HyperparametersEmbedder"
+        class: "PretrainedHyperparametersEmbedder"
+        autoencoder_ckpt_path: "/home/cherniak/itmo_job/surrogate/experiment_logs/embed_hyperparameters/to_8_with_learnables/mse_loss__no_dropout/checkpoints/epoch=9-step=980.ckpt"
         out_dim: 8
+        trainable: false
       op_name_embedder:
         class: "NameEmbedder"
         out_dim: 2
@@ -75,7 +77,7 @@ trainer:
 
 tensorboard_logger:
   save_dir: "/home/cherniak/itmo_job/surrogate/experiment_logs/no_meta_features_and_fedot_pipelines_(type_and_hparams)/train_node_embedder_from_scratch/overfit_27th_dataset/simple_graph_encoder/rank_over_10"
-  name: "mhsa"
+  name: "mhsa_pretrained_hparams"
 
 model_checkpoint_callback:
   save_top_k: 1

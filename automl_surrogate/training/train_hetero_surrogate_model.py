@@ -24,9 +24,14 @@ def build_datasets(config: Dict[str, Any]) -> Tuple[Dataset, Dataset, Dataset]:
     root = config["root"]
     id2pipe_path = os.path.join(root, "id2pipeline_path.pickle")
     id2dataset_path = os.path.join(root, "id2dataset_id.pickle")
-    train_task_pipe_comb_path = os.path.join(root, "train_task_pipe_comb.csv")
-    test_task_pipe_comb_path = os.path.join(root, "test_task_pipe_comb.csv")
-
+    if "train_task_pipe_comb" in config and config["train_task_pipe_comb"] is not None:
+        train_task_pipe_comb_path = os.path.join(root, config["train_task_pipe_comb"])
+    else:
+        train_task_pipe_comb_path = os.path.join(root, "train_task_pipe_comb.csv")
+    if "test_task_pipe_comb" in config and config["test_task_pipe_comb"] is not None:
+        test_task_pipe_comb_path = os.path.join(root, config["test_task_pipe_comb"])
+    else:
+        test_task_pipe_comb_path = os.path.join(root, "test_task_pipe_comb.csv")
     #  avoid repeated loading of mappings
     print("Loading id2pipe")
     with open(id2pipe_path, "rb") as f:
