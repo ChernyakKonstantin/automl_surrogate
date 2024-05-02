@@ -1,3 +1,4 @@
 from .heterogeneous.listwise.pipelines_ranking import HeteroPipelineRankingSurrogateModel
+from .heterogeneous.pointwise.pipelines_regression import HeteroPipelineRegressionSurrogateModel
 
-__all__ = ["HeteroPipelineRankingSurrogateModel"]
+__all__ = ["HeteroPipelineRankingSurrogateModel", "HeteroPipelineRegressionSurrogateModel"]
