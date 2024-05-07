@@ -32,6 +32,7 @@ def build_datasets(config: Dict[str, Any]) -> Tuple[Dataset, Dataset, Dataset]:
         test_task_pipe_comb_path = os.path.join(root, config["test_task_pipe_comb"])
     else:
         test_task_pipe_comb_path = os.path.join(root, "test_task_pipe_comb.csv")
+    meta_features_path = os.path.join(root, config["meta_features_file"])
     #  avoid repeated loading of mappings
     print("Loading id2pipe")
     with open(id2pipe_path, "rb") as f:
@@ -42,25 +43,41 @@ def build_datasets(config: Dict[str, Any]) -> Tuple[Dataset, Dataset, Dataset]:
         id2dataset = pickle.load(f)
 
     print("Making train dataset")
-    train_dataset = HeteroPipelineDataset( #HeteroPipelineAndDatasetFeaturesDataset(
+    # train_dataset = HeteroPipelineDataset(
+    #     train_task_pipe_comb_path,
+    #     id2pipe,
+    #     id2dataset,
+    #     is_val=False,
+    #     pipelines_per_step=config["train_dataset"]["pipelines_per_step"],
+    #     use_dataset_with_id=config["train_dataset"]["use_dataset_with_id"],
+    #     normalize=config["train_dataset"]["normalize"],
+    # )
+    train_dataset = HeteroPipelineAndDatasetFeaturesDataset(
         train_task_pipe_comb_path,
+        meta_features_path,
         id2pipe,
         id2dataset,
-        is_val=False,
         pipelines_per_step=config["train_dataset"]["pipelines_per_step"],
-        use_dataset_with_id=config["train_dataset"]["use_dataset_with_id"],
         normalize=config["train_dataset"]["normalize"],
     )
     print("Making test dataset")
-    val_dataset = HeteroPipelineDataset( #HeteroPipelineAndDatasetFeaturesDataset(
+    # val_dataset = HeteroPipelineDataset(
+    #     test_task_pipe_comb_path,
+    #     id2pipe,
+    #     id2dataset,
+    #     is_val=True,
+    #     pipelines_per_step=config["val_dataset"]["pipelines_per_step"],
+    #     use_dataset_with_id=config["val_dataset"]["use_dataset_with_id"],
+    #     normalize=config["val_dataset"]["normalize"],
+
+    # )
+    val_dataset = HeteroPipelineAndDatasetFeaturesDataset(
         test_task_pipe_comb_path,
+        meta_features_path,
         id2pipe,
         id2dataset,
-        is_val=True,
         pipelines_per_step=config["val_dataset"]["pipelines_per_step"],
-        use_dataset_with_id=config["val_dataset"]["use_dataset_with_id"],
         normalize=config["val_dataset"]["normalize"],
-
     )
     assert len(train_dataset) != 0
     assert len(val_dataset) != 0
