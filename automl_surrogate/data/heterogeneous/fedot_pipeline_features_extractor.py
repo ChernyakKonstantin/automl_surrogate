@@ -10,6 +10,7 @@ import torch.nn as nn
 from fedot.core.pipelines.tuning.search_space import PipelineSearchSpace
 from fedot.core.repository.operation_types_repository import OperationTypesRepository
 from torch_geometric.data import Data
+from torch.nested import nested_tensor
 
 from .data_types import HeterogeneousData
 
@@ -237,30 +238,38 @@ class FEDOTPipelineFeaturesExtractor2(FEDOTPipelineFeaturesExtractor):
         for node_type, node_index in zip(operations_names, operations_ids):
             node_idxes_per_type[node_type].append(node_index)
 
-        hparams = defaultdict(list)
-        encoded_type = defaultdict(list)
-        for operation_name, operation_parameters in zip(operations_names, operations_parameters):
-            parameters_vec = self._operation_parameters2vec(operation_name, operation_parameters)
-            parameters_vec = torch.FloatTensor(parameters_vec.reshape(1, -1))
-            hparams[operation_name].append(parameters_vec)
-            if self.operation_encoding is not None:
-                name_vec = self._operation_name2vec(operation_name)
-                name_vec = torch.LongTensor(name_vec.reshape(1, -1))
-                encoded_type[operation_name].append(name_vec)
+        hparams = [None] * len(operations_ids)
+        encoded_type = [None] * len(operations_ids)
 
-        for operation_name, operation_parameters in hparams.items():
-            hparams[operation_name] = torch.vstack(operation_parameters)
+        for i, operation_name, operation_parameters in zip(operations_ids, operations_names, operations_parameters):
+            hparams[i] = torch.FloatTensor(self._operation_parameters2vec(operation_name, operation_parameters))
+            encoded_type[i] = self._operation_name2vec(operation_name).item()
+        return HeterogeneousData(edge_index, node_idxes_per_type, nested_tensor(hparams), torch.LongTensor(encoded_type))
 
-        if self.operation_encoding is not None:
-            for operation_name, operation_encoding in encoded_type.items():
-                encoded_type[operation_name] = torch.vstack(operation_encoding)
-        else:
-            encoded_type = {}
+        # hparams = defaultdict(list)
+        # encoded_type = defaultdict(list)
+        # for operation_name, operation_parameters in zip(operations_names, operations_parameters):
+        #     parameters_vec = self._operation_parameters2vec(operation_name, operation_parameters)
+        #     parameters_vec = torch.FloatTensor(parameters_vec.reshape(1, -1))
+        #     hparams[operation_name].append(parameters_vec)
+        #     if self.operation_encoding is not None:
+        #         name_vec = self._operation_name2vec(operation_name)
+        #         name_vec = torch.LongTensor(name_vec.reshape(1, -1))
+        #         encoded_type[operation_name].append(name_vec)
 
-        data = HeterogeneousData(
-            edge_index=edge_index,
-            node_idxes_per_type=node_idxes_per_type,
-            hparams=hparams,
-            encoded_type=encoded_type,
-        )
-        return data
+        # for operation_name, operation_parameters in hparams.items():
+        #     hparams[operation_name] = torch.vstack(operation_parameters)
+
+        # if self.operation_encoding is not None:
+        #     for operation_name, operation_encoding in encoded_type.items():
+        #         encoded_type[operation_name] = torch.vstack(operation_encoding)
+        # else:
+        #     encoded_type = {}
+
+        # data = HeterogeneousData(
+        #     edge_index=edge_index,
+        #     node_idxes_per_type=node_idxes_per_type,
+        #     hparams=hparams,
+        #     encoded_type=encoded_type,
+        # )
+        # return data
