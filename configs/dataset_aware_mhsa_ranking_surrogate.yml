@@ -9,17 +9,28 @@ model:
     - ndcg
     - precision
     - kendalltau
-  class: DataHeteroPipelineRankingSurrogateModel
+  class: DataHeteroPipelineRankingSurrogateModel2
   model_parameters:
+    # node_embedder:
+    #   op_hyperparams_embedder:
+    #     class: TransitHyperparametersEmbedder
+    #     out_dim: 8
+    #   op_name_embedder:
+    #     class: NameEmbedder
+    #     out_dim: 2
+    #   embedding_joiner:
+    #     class: CatEmbeddingJoiner
     node_embedder:
       op_hyperparams_embedder:
-        class: HyperparametersEmbedder
+        class: "PretrainedHyperparametersEmbedder"
+        autoencoder_ckpt_path: "/home/cherniak/itmo_job/surrogate/experiment_logs/embed_hyperparameters/to_8_with_learnables/mse_loss__no_dropout/checkpoints/epoch=9-step=980.ckpt"
         out_dim: 8
+        trainable: false
       op_name_embedder:
-        class: NameEmbedder
+        class: "NameEmbedder"
         out_dim: 2
       embedding_joiner:
-        class: CatEmbeddingJoiner
+        class: "CatEmbeddingJoiner"
     pipeline_encoder:
       type: simple_graph_encoder
       d_model: 64
@@ -50,34 +61,42 @@ model:
       num_layers: 4
 
 dataset_params:
-  root: "/home/cherniak/itmo_job/GAMLET/data/meta_features_and_fedot_pipelines_raw"
-  meta_features_file: "pymfe.csv"
   train_dataset:
+    root: "/home/cherniak/itmo_job/GAMLET/data/meta_features_and_fedot_pipelines"
+    task_pipe_comb_file: "train_task_pipe_comb.json"
+    meta_features_file: "pymfe.csv"
+    pipelines_dir: "pipelines" # "pipelines_homogeneous_hparams"
+    encode_type: "ordinal"
     pipelines_per_step: 10
     normalize: false
+    normalize_meta_features: "minmax"
   val_dataset:
+    root: "/home/cherniak/itmo_job/GAMLET/data/meta_features_and_fedot_pipelines"
+    task_pipe_comb_file: "test_task_pipe_comb.json"
+    meta_features_file: "pymfe.csv"
+    pipelines_dir: "pipelines" # "pipelines_homogeneous_hparams"
+    encode_type: "ordinal"
     pipelines_per_step: 10
     normalize: false
+    normalize_meta_features: "minmax"
 trainer:
   log_every_n_steps: 20
   num_sanity_val_steps: 0
   max_epochs: 100
-  accelerator: cpu
+  accelerator: cuda
   devices: auto
   # check_val_every_n_epoch : null
   # val_check_interval: 0.1
-  # limit_train_batches: 2
-  # limit_val_batches: 2
-
 tensorboard_logger:
-  save_dir: /home/cherniak/itmo_job/surrogate/experiment_logs/meta_features_and_fedot_pipelines_(type_and_hparams)/train_node_embedder_from_scratch/simple_graph_encoder/rank_over_10
-  name: mhca_mhsa
+  save_dir: /home/cherniak/itmo_job/surrogate/experiment_logs/meta_features_and_fedot_pipelines_(type_and_hparams)/pretrained_hparams_frozen/simple_graph_encoder/rank_over_10/mhsa/early_fusion_concat
+  name: minmax_scale_meta_features
 model_checkpoint_callback:
-  save_top_k: 1
-  monitor: val_ndcg
-  mode: max
+  every_n_train_steps: 500
+  save_top_k: -1
+  # monitor: val_ndcg
+  # mode: max
   save_last: true
-  every_n_epochs: 1
+  # every_n_epochs: 1
 early_stopping_callback:
   monitor: val_ndcg
   mode: max

@@ -21,27 +21,6 @@ import numpy as np
 torch.autograd.set_detect_anomaly(True)
 
 def build_datasets(config: Dict[str, Any]) -> Tuple[Dataset, Dataset, Dataset]:
-    root = config["root"]
-    id2pipe_path = os.path.join(root, "id2pipeline_path.pickle")
-    id2dataset_path = os.path.join(root, "id2dataset_id.pickle")
-    if "train_task_pipe_comb" in config and config["train_task_pipe_comb"] is not None:
-        train_task_pipe_comb_path = os.path.join(root, config["train_task_pipe_comb"])
-    else:
-        train_task_pipe_comb_path = os.path.join(root, "train_task_pipe_comb.csv")
-    if "test_task_pipe_comb" in config and config["test_task_pipe_comb"] is not None:
-        test_task_pipe_comb_path = os.path.join(root, config["test_task_pipe_comb"])
-    else:
-        test_task_pipe_comb_path = os.path.join(root, "test_task_pipe_comb.csv")
-    meta_features_path = os.path.join(root, config["meta_features_file"])
-    #  avoid repeated loading of mappings
-    print("Loading id2pipe")
-    with open(id2pipe_path, "rb") as f:
-        id2pipe = pickle.load(f)
-
-    print("Loading id2dataset")
-    with open(id2dataset_path, "rb") as f:
-        id2dataset = pickle.load(f)
-
     print("Making train dataset")
     # train_dataset = HeteroPipelineDataset(
     #     train_task_pipe_comb_path,
@@ -52,14 +31,7 @@ def build_datasets(config: Dict[str, Any]) -> Tuple[Dataset, Dataset, Dataset]:
     #     use_dataset_with_id=config["train_dataset"]["use_dataset_with_id"],
     #     normalize=config["train_dataset"]["normalize"],
     # )
-    train_dataset = HeteroPipelineAndDatasetFeaturesDataset(
-        train_task_pipe_comb_path,
-        meta_features_path,
-        id2pipe,
-        id2dataset,
-        pipelines_per_step=config["train_dataset"]["pipelines_per_step"],
-        normalize=config["train_dataset"]["normalize"],
-    )
+    train_dataset = HeteroPipelineAndDatasetFeaturesDataset(**config["train_dataset"])
     print("Making test dataset")
     # val_dataset = HeteroPipelineDataset(
     #     test_task_pipe_comb_path,
@@ -71,14 +43,7 @@ def build_datasets(config: Dict[str, Any]) -> Tuple[Dataset, Dataset, Dataset]:
     #     normalize=config["val_dataset"]["normalize"],
 
     # )
-    val_dataset = HeteroPipelineAndDatasetFeaturesDataset(
-        test_task_pipe_comb_path,
-        meta_features_path,
-        id2pipe,
-        id2dataset,
-        pipelines_per_step=config["val_dataset"]["pipelines_per_step"],
-        normalize=config["val_dataset"]["normalize"],
-    )
+    val_dataset = HeteroPipelineAndDatasetFeaturesDataset(**config["val_dataset"])
     assert len(train_dataset) != 0
     assert len(val_dataset) != 0
     return train_dataset, val_dataset, val_dataset
