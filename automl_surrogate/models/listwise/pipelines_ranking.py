@@ -6,15 +6,15 @@ from pytorch_lightning import LightningModule
 from torch import Tensor
 from torch_geometric.data import Batch
 import torch.optim as optim
-from automl_surrogate.data.heterogeneous import HeterogeneousBatch
+from automl_surrogate.data import HeterogeneousBatch
 from automl_surrogate.layers.encoders import GraphTransformer, SimpleGNNEncoder
-from automl_surrogate.models.heterogeneous.node_embedder import build_node_embedder
+from automl_surrogate.models.node_embedder import build_node_embedder
 import automl_surrogate.losses as losses_module
 import automl_surrogate.metrics as metrics_module
 import torch.nn.functional as F
 from typing import Iterable
 
-class HeteroPipelineRegressionSurrogateModel(LightningModule):
+class HeteroPipelineRankingSurrogateModel(LightningModule):
     # Same hypothesis as in https://arxiv.org/pdf/1912.05891.pdf
     def __init__(
         self,
@@ -35,7 +35,11 @@ class HeteroPipelineRegressionSurrogateModel(LightningModule):
             self.node_embedder.out_dim,
             model_parameters["pipeline_encoder"],
         )
-        self.linear = nn.Linear(self.pipeline_encoder.out_dim, 1)
+        self.mhsa_block = self.build_mhsa_block(
+            self.pipeline_encoder.out_dim,
+            model_parameters["mhsa_block"],
+        )
+        self.linear = nn.Linear(self.mhsa_block.out_dim, 1)
 
     @staticmethod
     def build_pipeline_encoder(in_dim: int, config: Dict[str, Any]) -> nn.Module:
@@ -44,6 +48,22 @@ class HeteroPipelineRegressionSurrogateModel(LightningModule):
             return SimpleGNNEncoder(**{k: v for k, v in config.items() if k != "type"})
         elif config["type"] == "graph_transformer":
             return GraphTransformer(**{k: v for k, v in config.items() if k != "type"})
+
+    @staticmethod
+    def build_mhsa_block(in_dim: int, config: Dict[str, Any]) -> nn.TransformerEncoder:
+        transformer_layer = nn.TransformerEncoderLayer(
+            d_model=in_dim,
+            nhead=config["nhead"],
+            dim_feedforward=config["dim_feedforward"],
+            dropout=config["dropout"],
+            batch_first=True,
+        )
+        mhsa_block = nn.TransformerEncoder(
+            transformer_layer,
+            num_layers=config["num_layers"],
+        )
+        mhsa_block.out_dim = in_dim
+        return mhsa_block
 
     def homogenize_pipelines(self, heterogen_pipelines: Sequence[HeterogeneousBatch]) -> List[Batch]:
         node_embeddings = [self.node_embedder(p) for p in heterogen_pipelines]
@@ -57,10 +77,10 @@ class HeteroPipelineRegressionSurrogateModel(LightningModule):
         return pipelines_embeddings
 
     def forward(self, heterogen_pipelines: Sequence[HeterogeneousBatch]) -> Tensor:
-        # [BATCH, N, HIDDEN_1]
         pipelines_embeddings = self.encode_pipelines(heterogen_pipelines)
+        mhsa_output = self.mhsa_block(pipelines_embeddings)
+        scores = self.linear(mhsa_output).squeeze(2)
         # [BATCH, N]
-        scores = self.linear(pipelines_embeddings).squeeze(2)
         return scores
 
     def training_step(
@@ -69,12 +89,16 @@ class HeteroPipelineRegressionSurrogateModel(LightningModule):
         *args,
         **kwargs,
     ) -> Tensor:
-        # For train sequnce length is 2.
         heterogen_pipelines, y = batch
         scores = self.forward(heterogen_pipelines)
-        difference = scores[:, 0] - scores[:, 1]
-        gt_label = (y[:, 0] > y[:, 1]).to(torch.float32)
-        loss = F.binary_cross_entropy(torch.sigmoid(difference), gt_label)
+        if self.loss_name == "kl_div":
+            loss = F.kl_div(
+                torch.log_softmax(scores, dim=1),
+                torch.log_softmax(y, dim=1),
+                log_target=True,
+            )
+        else:
+            loss = self.loss_fn(scores, y)
         self.log("train_loss", loss)
         return loss
 
@@ -83,7 +107,6 @@ class HeteroPipelineRegressionSurrogateModel(LightningModule):
         prefix: str,
         batch: Tuple[Sequence[HeterogeneousBatch], Tensor],
     ):
-        # For train sequnce length is abitrary.
         heterogen_pipelines, y = batch
         with torch.no_grad():
             scores = self.forward(heterogen_pipelines)

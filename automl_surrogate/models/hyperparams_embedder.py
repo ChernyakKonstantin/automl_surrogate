@@ -5,12 +5,12 @@ import torch
 import torch.nn as nn
 from torch import Tensor
 
-from automl_surrogate.models.heterogeneous.hyperparams_encoder import (
+from automl_surrogate.models.hyperparams_encoder import (
     DEFAULT_OUT_DIM,
     default_hyperparams_encoder_builder,
     pretrained_hyperparams_encoder_builder,
 )
-from automl_surrogate.models.heterogeneous.misc import NODES_DIMENSIONS, OPERATIONS
+from automl_surrogate.models.misc import NODES_DIMENSIONS, OPERATIONS
 
 
 class HyperparametersEmbedder(nn.Module):
@@ -114,3 +114,13 @@ class PretrainedHyperparametersEmbedder(HyperparametersEmbedder):
         else:
             with torch.no_grad():
                 return super().forward(x)
+
+class TransitHyperparametersEmbedder:
+    def __init__(self, out_dim: int = DEFAULT_OUT_DIM):
+        self.out_dim = out_dim
+
+    def forward(self, x: Dict[str, Tensor]) -> Dict[str, Tensor]:
+        return x
+
+    def __call__(self, x: Dict[str, Tensor]) -> Dict[str, Tensor]:
+        return self.forward(x)

@@ -10,7 +10,7 @@ import torch
 from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint
 from pytorch_lightning.loggers import TensorBoardLogger
-from automl_surrogate.data.heterogeneous import HeteroPipelineAndDatasetFeaturesDataset, HeteroPipelineDataset
+from automl_surrogate.data import HeteroPipelineAndDatasetFeaturesDataset, HeteroPipelineDataset
 
 import automl_surrogate.models as surrogate_module
 from torch.utils.data import Dataset, DataLoader

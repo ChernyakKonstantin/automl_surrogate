@@ -2,22 +2,22 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch_geometric.nn as tgnn
-from automl_surrogate.data.heterogeneous import HeteroPipelineAndDatasetFeaturesDataset
+from automl_surrogate.data import HeteroPipelineAndDatasetFeaturesDataset
 from automl_surrogate.layers.encoders.simple_graph_encoder import SimpleGNNEncoder
 from torch_geometric.data.database import SQLiteDatabase
-from automl_surrogate.data.heterogeneous.data_types import HeterogeneousData, HeterogeneousBatch
+from automl_surrogate.data.data_types import HeterogeneousData, HeterogeneousBatch
 from torch_geometric.data import Data, Batch
 from pytorch_lightning import LightningModule, Trainer
 import torch.optim as optim
 from torch_geometric.utils import to_dense_adj
-from automl_surrogate.data.heterogeneous.fedot_pipeline_features_extractor import FEDOTPipelineFeaturesExtractor2
+from automl_surrogate.data.fedot_pipeline_features_extractor import FEDOTPipelineFeaturesExtractor2
 from torch.utils.data import Dataset, DataLoader
 import pandas as pd
 import os
-from automl_surrogate.models.heterogeneous.node_embedder import NodeEmbedder
-from automl_surrogate.models.heterogeneous.embedding_joiner import CatEmbeddingJoiner
-from automl_surrogate.models.heterogeneous.hyperparams_embedder import HyperparametersEmbedder, PretrainedHyperparametersEmbedder
-from automl_surrogate.models.heterogeneous.name_embedder import NameEmbedder
+from automl_surrogate.models.node_embedder import NodeEmbedder
+from automl_surrogate.models.embedding_joiner import CatEmbeddingJoiner
+from automl_surrogate.models.hyperparams_embedder import HyperparametersEmbedder, PretrainedHyperparametersEmbedder
+from automl_surrogate.models.name_embedder import NameEmbedder
 from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint
 from pytorch_lightning.loggers import TensorBoardLogger
 from torch.nested import nested_tensor
@@ -196,7 +196,7 @@ if __name__ == "__main__":
 
     logger = TensorBoardLogger(save_dir="/home/cherniak/itmo_job/surrogate/experiment_logs/pretrain_encoder/frozen_hparams")
 
-    model_checkpoint_callback = ModelCheckpoint(save_top_k=1, monitor="val_loss", mode="min", save_last=True, every_n_epochs=1)
+    model_checkpoint_callback = ModelCheckpoint(save_last=True, every_n_train_steps=1000)  # save_top_k=3, monitor="val_loss", mode="min", every_n_epochs=1,
 
     model = PipelineAE()
 

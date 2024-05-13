@@ -1,5 +1,5 @@
 import torch.nn as nn
-from automl_surrogate.models.heterogeneous.misc import NODES_DIMENSIONS, OPERATIONS
+from automl_surrogate.models.misc import NODES_DIMENSIONS, OPERATIONS
 from torchvision.ops import MLP
 from torch import Tensor
 from typing import List

@@ -1,9 +1,9 @@
 from typing import Any, Dict, Optional
 
 import torch.nn as nn
-from automl_surrogate.models.heterogeneous import embedding_joiner, hyperparams_embedder, name_embedder
+from automl_surrogate.models import embedding_joiner, hyperparams_embedder, name_embedder
 from torch import Tensor
-from automl_surrogate.data.heterogeneous import HeterogeneousBatch
+from automl_surrogate.data import HeterogeneousBatch
 
 class NodeEmbedder(nn.Module):
     def __init__(

@@ -1,14 +1,14 @@
-from automl_surrogate.models.heterogeneous.listwise.pipelines_ranking import HeteroPipelineRankingSurrogateModel
+from automl_surrogate.models.listwise.pipelines_ranking import HeteroPipelineRankingSurrogateModel
 from typing import Any, Dict, List, Tuple, Sequence, Optional, Union, Callable, Iterable
 from torch import Tensor
-from automl_surrogate.data.heterogeneous import HeterogeneousBatch
+from automl_surrogate.data import HeterogeneousBatch
 import torch.nn as nn
 import torch
 import automl_surrogate.metrics as metrics_module
 import torch.nn.functional as F
 from torch.nn.modules.transformer import _get_activation_fn
 from pytorch_lightning import LightningModule
-from automl_surrogate.models.heterogeneous.node_embedder import build_node_embedder
+from automl_surrogate.models.node_embedder import build_node_embedder
 
 class CrossAttentionTransformerEncoder(nn.TransformerEncoder):
 

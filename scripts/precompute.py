@@ -1,7 +1,7 @@
-from automl_surrogate.data.heterogeneous import HeterogeneousData
-from automl_surrogate.models.heterogeneous.hyperparams_embedder import PretrainedHyperparametersEmbedder
+from automl_surrogate.data import HeterogeneousData
+from automl_surrogate.models.hyperparams_embedder import PretrainedHyperparametersEmbedder
 import torch
-from automl_surrogate.data.heterogeneous.dataset import HeteroPipelineAndDatasetFeaturesDataset
+from automl_surrogate.data.dataset import HeteroPipelineAndDatasetFeaturesDataset
 import os
 import pickle
 from pathlib import Path

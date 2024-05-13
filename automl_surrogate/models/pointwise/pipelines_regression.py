@@ -6,15 +6,15 @@ from pytorch_lightning import LightningModule
 from torch import Tensor
 from torch_geometric.data import Batch
 import torch.optim as optim
-from automl_surrogate.data.heterogeneous import HeterogeneousBatch
+from automl_surrogate.data import HeterogeneousBatch
 from automl_surrogate.layers.encoders import GraphTransformer, SimpleGNNEncoder
-from automl_surrogate.models.heterogeneous.node_embedder import build_node_embedder
+from automl_surrogate.models.node_embedder import build_node_embedder
 import automl_surrogate.losses as losses_module
 import automl_surrogate.metrics as metrics_module
 import torch.nn.functional as F
 from typing import Iterable
 
-class HeteroPipelineComparisonSurrogateModel(LightningModule):
+class HeteroPipelineRegressionSurrogateModel(LightningModule):
     # Same hypothesis as in https://arxiv.org/pdf/1912.05891.pdf
     def __init__(
         self,
@@ -35,7 +35,7 @@ class HeteroPipelineComparisonSurrogateModel(LightningModule):
             self.node_embedder.out_dim,
             model_parameters["pipeline_encoder"],
         )
-        self.comparator = self.build_comparator(model_parameters["comparator"])
+        self.linear = nn.Linear(self.pipeline_encoder.out_dim, 1)
 
     @staticmethod
     def build_pipeline_encoder(in_dim: int, config: Dict[str, Any]) -> nn.Module:
@@ -50,34 +50,18 @@ class HeteroPipelineComparisonSurrogateModel(LightningModule):
         out_dim = self.node_embedder.out_dim
         return [p.to_pyg_batch(out_dim, emb) for p, emb in zip(heterogen_pipelines, node_embeddings)]
 
-    def build_comparator(self, model_parameters: Dict[str, Any]) -> nn.Module:
-        class ConcatComparator(nn.Module):
-            def __init__(self, in_dim: int):
-                super().__init__()
-                self.linear = nn.Linear(in_dim, 1)
-
-            def forward(self, pipe1_emb: Tensor, pipe2_emb: Tensor) -> Tensor:
-                x = torch.hstack([pipe1_emb, pipe2_emb])
-                logit = self.linear(x)
-                return torch.sigmoid(logit)
-
-        class CrossAttentionComparator(nn.Module):
-            def __init__():
-                super().__init__()
-                raise NotImplementedError()
-
-        if model_parameters["type"] == "concat":
-            return ConcatComparator(self.pipeline_encoder.out_dim * 2)
-        elif model_parameters["type"] == "cross-attention":
-            return CrossAttentionComparator(self.pipeline_encoder.out_dim * 2)
-        else:
-            raise ValueError(f"Unknown comparator type {model_parameters['comparator_type']}")
-
     def encode_pipelines(self, heterogen_pipelines: Sequence[HeterogeneousBatch]) -> Tensor:
         homogen_pipelines = self.homogenize_pipelines(heterogen_pipelines)
         # [N, BATCH, HIDDEN] -> [BATCH, N, HIDDEN]
         pipelines_embeddings = torch.stack([self.pipeline_encoder(x) for x in homogen_pipelines]).permute(1,0,2)
         return pipelines_embeddings
+
+    def forward(self, heterogen_pipelines: Sequence[HeterogeneousBatch]) -> Tensor:
+        # [BATCH, N, HIDDEN_1]
+        pipelines_embeddings = self.encode_pipelines(heterogen_pipelines)
+        # [BATCH, N]
+        scores = self.linear(pipelines_embeddings).squeeze(2)
+        return scores
 
     def training_step(
         self,
@@ -87,36 +71,12 @@ class HeteroPipelineComparisonSurrogateModel(LightningModule):
     ) -> Tensor:
         # For train sequnce length is 2.
         heterogen_pipelines, y = batch
-        # [BATCH, 2, HIDDEN]
-        pipelines_embeddings = self.encode_pipelines(heterogen_pipelines)
-        # [BATCH, 1]
-        score = self.comparator(pipelines_embeddings[:, 0, :], pipelines_embeddings[:, 1, :]).squeeze(1)
-        score_reversed = self.comparator(pipelines_embeddings[:, 1, :], pipelines_embeddings[:, 0, :]).squeeze(1)
+        scores = self.forward(heterogen_pipelines)
+        difference = scores[:, 0] - scores[:, 1]
         gt_label = (y[:, 0] > y[:, 1]).to(torch.float32)
-        gt_label_reversed = (y[:, 1] > y[:, 0]).to(torch.float32)
-        loss = F.binary_cross_entropy(score, gt_label)
-        loss_reversed = F.binary_cross_entropy(score_reversed, gt_label_reversed)
-        loss = 0.5 * loss + 0.5 * loss_reversed
+        loss = F.binary_cross_entropy(torch.sigmoid(difference), gt_label)
         self.log("train_loss", loss)
         return loss
-
-    def bubble_argsort(self, pipelines_embeddings: Tensor) -> Tensor:
-        # Batch is 1. pipelines_embeddings shape is [BATCH, N, HIDDEN]
-        batch_size = pipelines_embeddings.shape[0]
-        n = pipelines_embeddings.shape[1]
-        indices = torch.LongTensor([list(range(n))] * batch_size).to(self.device)
-        for i in range(n-1):
-            swapped = False
-            for j in range(n-i-1):
-                to_swap = self.comparator(pipelines_embeddings[:, j], pipelines_embeddings[:, j+1]).squeeze(1) > 0.5
-                swapped = to_swap.any().item()
-                if not swapped:
-                    continue
-                pipelines_embeddings[to_swap, j], pipelines_embeddings[to_swap, j+1] = pipelines_embeddings[to_swap, j+1], pipelines_embeddings[to_swap, j]
-                indices[to_swap, j], indices[to_swap, j+1] = indices[to_swap, j+1], indices[to_swap, j]
-            if not swapped:
-                break
-        return indices
 
     def evaluation_step(
         self,
@@ -126,17 +86,7 @@ class HeteroPipelineComparisonSurrogateModel(LightningModule):
         # For train sequnce length is abitrary.
         heterogen_pipelines, y = batch
         with torch.no_grad():
-            # [BATCH, N, HIDDEN]
-            pipelines_embeddings = self.encode_pipelines(heterogen_pipelines)
-            sorted_indices = self.bubble_argsort(pipelines_embeddings)
-            # batch_size = pipelines_embeddings.shape[0]
-            seq_len = pipelines_embeddings.shape[1]
-            scores = []
-            for seq_idxes in sorted_indices:
-                seq_scores = torch.empty_like(seq_idxes, dtype=torch.float32)
-                seq_scores[seq_idxes] = torch.linspace(0, 1, seq_len, device=seq_scores.device)
-                scores.append(seq_scores)
-            scores = torch.stack(scores)
+            scores = self.forward(heterogen_pipelines)
 
         if "ndcg" in self.validation_metrics:
             metric_fn = getattr(metrics_module, "ndcg")
