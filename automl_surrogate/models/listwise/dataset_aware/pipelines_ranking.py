@@ -1,5 +1,4 @@
-from automl_surrogate.models.listwise.pipelines_ranking import HeteroPipelineRankingSurrogateModel
-from typing import Any, Dict, List, Tuple, Sequence, Optional, Union, Callable, Iterable
+from typing import Any, Dict, List, Tuple, Sequence, Union, Callable
 from torch import Tensor
 from automl_surrogate.data import HeterogeneousBatch
 import torch.nn as nn
@@ -7,8 +6,48 @@ import torch
 import automl_surrogate.metrics as metrics_module
 import torch.nn.functional as F
 from torch.nn.modules.transformer import _get_activation_fn
-from pytorch_lightning import LightningModule
-from automl_surrogate.models.node_embedder import build_node_embedder
+from automl_surrogate.models.base import BaseSurrogate
+from automl_surrogate.models.listwise.set_rank import SetRank
+from automl_surrogate.layers.dataset_encoder import DatasetEncoder
+
+class BaseDataAwareRanker(BaseSurrogate):
+
+    def training_step(
+        self,
+        batch: Tuple[Sequence[HeterogeneousBatch], Tensor, Tensor],
+        *args,
+        **kwargs,
+    ) -> Tensor:
+        heterogen_pipelines, dataset, y = batch
+        scores = self.forward(heterogen_pipelines, dataset)
+        loss = F.kl_div(
+            torch.log_softmax(scores, dim=1),
+            torch.log_softmax(y, dim=1),
+            log_target=True,
+        )
+        self.log("train_loss", loss)
+        return loss
+
+    def evaluation_step(
+        self,
+        prefix: str,
+        batch: Tuple[Sequence[HeterogeneousBatch], Tensor],
+    ):
+        heterogen_pipelines, dataset, y = batch
+        y = torch.softmax(y, dim=1)
+
+        with torch.no_grad():
+            scores = self.forward(heterogen_pipelines, dataset)
+
+        if "ndcg" in self.validation_metrics:
+            metric_fn = getattr(metrics_module, "ndcg")
+            self.log(f"{prefix}_ndcg", metric_fn(y.cpu(), scores.cpu()))
+        if "precision" in self.validation_metrics:
+            metric_fn = getattr(metrics_module, "precision")
+            self.log(f"{prefix}_precision", metric_fn(y, scores))
+        if "kendalltau" in self.validation_metrics:
+            metric_fn = getattr(metrics_module, "kendalltau")
+            self.log(f"{prefix}_kendalltau", metric_fn(y.cpu(), scores.cpu()))
 
 class CrossAttentionTransformerEncoder(nn.TransformerEncoder):
 
@@ -53,52 +92,33 @@ class CrossAttentionTransformerEncoderLayer(nn.TransformerEncoderLayer):
 
     # cross-attention block
     def _ca_block(self, query: Tensor, kv: Tensor) -> Tensor:
-        # [Batch, M] -> [Batch, 1, M]
+        # Expected input shapes are [Batch, N, HIDDEN_1], [Batch, HIDDEN_2]
         kv = kv.unsqueeze(1)
         x = self.cross_attn(query, kv, kv, need_weights=False)[0]
         return self.dropout1(x)
 
-def build_dataset_encoder(config: Dict[str, Any]) -> nn.Module:
-    dataset_encoder = nn.Sequential(
-        nn.Linear(config["in_size"], config["hidden_dim"]),
-        nn.ReLU(),
-        nn.Linear(config["hidden_dim"], config["hidden_dim"]),
-        nn.ReLU(),
-    )
-    dataset_encoder.out_dim = config["hidden_dim"]
-    return dataset_encoder
-
-class DataHeteroPipelineRankingSurrogateModel(HeteroPipelineRankingSurrogateModel):
-    def __init__(
-        self,
-        model_parameters: Dict[str, Any],
-        loss_fn: str,
-        validation_metrics: List[str],
-        lr: float = 1e-3,
-        weight_decay: float = 1e-4,
-    ):
-        super(HeteroPipelineRankingSurrogateModel, self).__init__()
-        self.lr = lr
-        self.weight_decay = weight_decay
-        self.loss_name = loss_fn
-        self.validation_metrics = validation_metrics
-
-        self.node_embedder = build_node_embedder(model_parameters["node_embedder"])
-        self.pipeline_encoder = self.build_pipeline_encoder(
-            self.node_embedder.out_dim,
-            model_parameters["pipeline_encoder"],
+class FusionSetRank(nn.Module):
+    def __init__(self, in_dim: int, nhead: int, dim_feedforward: int, dropout: int, num_layers: int, mhca_block_params: dict, dataset_dim: int):
+        super().__init__()
+        transformer_layer = nn.TransformerEncoderLayer(
+            d_model=in_dim,
+            nhead=nhead,
+            dim_feedforward=dim_feedforward,
+            dropout=dropout,
+            batch_first=True,
+            norm_first=False,
         )
-        self.dataset_encoder = build_dataset_encoder(model_parameters["dataset_encoder"])
+        self.mhsa_block = nn.TransformerEncoder(
+            transformer_layer,
+            num_layers=num_layers,
+        )
         self.mhca_block = self.build_mhca_block(
-            self.pipeline_encoder.out_dim,
-            self.dataset_encoder.out_dim,
-            model_parameters["mhca_block"],
+            in_dim,
+            dataset_dim,
+            mhca_block_params,
         )
-        self.mhsa_block = self.build_mhsa_block(
-            self.mhca_block.out_dim,
-            model_parameters["mhsa_block"],
-        )
-        self.linear = nn.Linear(self.mhsa_block.out_dim, 1)
+        self.linear = nn.Linear(in_dim, 1)
+        self.out_dim = 1
 
     @staticmethod
     def build_mhca_block(qdim: int, kdim: int, config: Dict[str, Any]) -> nn.TransformerEncoder:
@@ -117,125 +137,65 @@ class DataHeteroPipelineRankingSurrogateModel(HeteroPipelineRankingSurrogateMode
         mhca_block.out_dim = qdim
         return mhca_block
 
-    def forward(self, heterogen_pipelines: Sequence[HeterogeneousBatch], dataset: Tensor) -> Tensor:
-        pipelines_embeddings = self.encode_pipelines(heterogen_pipelines)
-        dataset_embeddings = self.dataset_encoder(dataset)
-        pipelines_embeddings = self.mhca_block(pipelines_embeddings, dataset_embeddings)
+    def forward(self, pipelines_embeddings: Tensor, dataset_embeddings: Tensor) -> Tensor:
+        # Expected input shape is [BATCH, N, HIDDEN]
         mhsa_output = self.mhsa_block(pipelines_embeddings)
-        scores = self.linear(mhsa_output).squeeze(2)
-        # [BATCH, N]
+        reweighted = self.mhca_block(mhsa_output, dataset_embeddings)
+        scores = self.linear(reweighted).squeeze(2)
+        # Output shape is [BATCH, N]
         return scores
 
-    def training_step(
-        self,
-        batch: Tuple[Sequence[HeterogeneousBatch], Tensor],
-        *args,
-        **kwargs,
-    ) -> Tensor:
-        heterogen_pipelines, dataset, y = batch
-        scores = self.forward(heterogen_pipelines, dataset)
-        if self.loss_name == "kl_div":
-            loss = F.kl_div(
-                torch.log_softmax(scores, dim=1),
-                torch.log_softmax(y, dim=1),
-                log_target=True,
-            )
-        else:
-            loss = self.loss_fn(scores, y)
-        self.log("train_loss", loss)
-        return loss
-
-    def evaluation_step(
-        self,
-        prefix: str,
-        batch: Tuple[Sequence[HeterogeneousBatch], Tensor],
-    ):
-        heterogen_pipelines, dataset, y = batch
-        with torch.no_grad():
-            scores = self.forward(heterogen_pipelines, dataset)
-
-        if "ndcg" in self.validation_metrics:
-            metric_fn = getattr(metrics_module, "ndcg")
-            self.log(f"{prefix}_ndcg", metric_fn(y.cpu(), scores.cpu()))
-        if "precision" in self.validation_metrics:
-            metric_fn = getattr(metrics_module, "precision")
-            self.log(f"{prefix}_precision", metric_fn(y, scores))
-        if "kendalltau" in self.validation_metrics:
-            metric_fn = getattr(metrics_module, "kendalltau")
-            self.log(f"{prefix}_kendalltau", metric_fn(y.cpu(), scores.cpu()))
-
-class DataHeteroPipelineRankingSurrogateModel2(DataHeteroPipelineRankingSurrogateModel):
+class LateFusionRanker(BaseDataAwareRanker):
     def __init__(
         self,
         model_parameters: Dict[str, Any],
-        loss_fn: str,
         validation_metrics: List[str],
         lr: float = 1e-3,
         weight_decay: float = 1e-4,
     ):
-        super(HeteroPipelineRankingSurrogateModel, self).__init__()
-        self.lr = lr
-        self.weight_decay = weight_decay
-        self.loss_name = loss_fn
-        self.validation_metrics = validation_metrics
-
-        self.node_embedder = build_node_embedder(model_parameters["node_embedder"])
-        self.pipeline_encoder = self.build_pipeline_encoder(
-            self.node_embedder.out_dim,
-            model_parameters["pipeline_encoder"],
+        super().__init__(model_parameters, validation_metrics, lr, weight_decay)
+        self.dataset_encoder = DatasetEncoder(**model_parameters["dataset_encoder"])
+        self.set_rank = FusionSetRank(
+            in_dim=self.pipeline_encoder.out_dim,
+            **model_parameters["set_rank"],
+            mhca_block_params=model_parameters["mhca_block"],
+            dataset_dim=self.dataset_encoder.out_dim,
         )
-        self.dataset_encoder = build_dataset_encoder(model_parameters["dataset_encoder"])
-        self.mhsa_block = self.build_mhsa_block(
-            self.pipeline_encoder.out_dim + self.dataset_encoder.out_dim,
-            model_parameters["mhsa_block"],
-        )
-        self.linear = nn.Linear(self.mhsa_block.out_dim, 1)
-
 
     def forward(self, heterogen_pipelines: Sequence[HeterogeneousBatch], dataset: Tensor) -> Tensor:
-        pipelines_embeddings = self.encode_pipelines(heterogen_pipelines)
-        n_pipelines = pipelines_embeddings.shape[1]
+        # [BATCH, N, HIDDEN_1]
+        pipelines_embeddings = torch.stack([self.pipeline_encoder(h_p) for h_p in heterogen_pipelines]).permute(1,0,2)
+        # [BATCH, HIDDEN_2]
         dataset_embeddings = self.dataset_encoder(dataset)
-        joined_embeddings = torch.cat([pipelines_embeddings, dataset_embeddings.unsqueeze(1).repeat(1, n_pipelines, 1)], dim=-1)
-        mhsa_output = self.mhsa_block(joined_embeddings)
-        scores = self.linear(mhsa_output).squeeze(2)
+        # [BATCH, N]
+        scores = self.set_rank(pipelines_embeddings, dataset_embeddings)
         # [BATCH, N]
         return scores
 
-    def training_step(
-        self,
-        batch: Tuple[Sequence[HeterogeneousBatch], Tensor],
-        *args,
-        **kwargs,
-    ) -> Tensor:
-        heterogen_pipelines, dataset, y = batch
-        scores = self.forward(heterogen_pipelines, dataset)
-        if self.loss_name == "kl_div":
-            loss = F.kl_div(
-                torch.log_softmax(scores, dim=1),
-                torch.log_softmax(y, dim=1),
-                log_target=True,
-            )
-        else:
-            loss = self.loss_fn(scores, y)
-        self.log("train_loss", loss)
-        return loss
 
-    def evaluation_step(
+class EarlyFusionRanker(BaseDataAwareRanker):
+    def __init__(
         self,
-        prefix: str,
-        batch: Tuple[Sequence[HeterogeneousBatch], Tensor],
+        model_parameters: Dict[str, Any],
+        validation_metrics: List[str],
+        lr: float = 1e-3,
+        weight_decay: float = 1e-4,
     ):
-        heterogen_pipelines, dataset, y = batch
-        with torch.no_grad():
-            scores = self.forward(heterogen_pipelines, dataset)
+        super().__init__(model_parameters, validation_metrics, lr, weight_decay)
+        self.dataset_encoder = DatasetEncoder(**model_parameters["dataset_encoder"])
+        self.set_rank = SetRank(
+            in_dim=self.pipeline_encoder.out_dim + self.dataset_encoder.out_dim,
+            **model_parameters["set_rank"],
+        )
 
-        if "ndcg" in self.validation_metrics:
-            metric_fn = getattr(metrics_module, "ndcg")
-            self.log(f"{prefix}_ndcg", metric_fn(y.cpu(), scores.cpu()))
-        if "precision" in self.validation_metrics:
-            metric_fn = getattr(metrics_module, "precision")
-            self.log(f"{prefix}_precision", metric_fn(y, scores))
-        if "kendalltau" in self.validation_metrics:
-            metric_fn = getattr(metrics_module, "kendalltau")
-            self.log(f"{prefix}_kendalltau", metric_fn(y.cpu(), scores.cpu()))
+    def forward(self, heterogen_pipelines: Sequence[HeterogeneousBatch], dataset: Tensor) -> Tensor:
+        # [BATCH, N, HIDDEN_1]
+        pipelines_embeddings = torch.stack([self.pipeline_encoder(h_p) for h_p in heterogen_pipelines]).permute(1,0,2)
+        n_pipelines = pipelines_embeddings.shape[1]
+        # [BATCH, N, HIDDEN_2]
+        dataset_embeddings = self.dataset_encoder(dataset).unsqueeze(1).repeat(1, n_pipelines, 1)
+        # [BATCH, N, HIDDEN_1 + HIDDEN_2]
+        joined_embeddings = torch.cat([pipelines_embeddings, dataset_embeddings], dim=-1)
+        # [BATCH, N]
+        scores = self.set_rank(joined_embeddings)
+        return scores

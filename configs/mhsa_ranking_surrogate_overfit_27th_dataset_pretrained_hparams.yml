@@ -14,9 +14,9 @@ model:
     - "precision"
     - "kendalltau"
 
-  class: "HeteroPipelineRankingSurrogateModel"
+  class: "Ranker"
   model_parameters:
-    node_embedder:
+    node_homogenizer:
       op_hyperparams_embedder:
         class: "PretrainedHyperparametersEmbedder"
         autoencoder_ckpt_path: "/home/cherniak/itmo_job/surrogate/experiment_logs/embed_hyperparameters/to_8_with_learnables/mse_loss__no_dropout/checkpoints/epoch=9-step=980.ckpt"
@@ -46,7 +46,7 @@ model:
       global_pool: "mean"
       use_edge_attr: False
 
-    mhsa_block:
+    set_rank:
       nhead: 8
       dim_feedforward: 2048
       dropout: 0.1

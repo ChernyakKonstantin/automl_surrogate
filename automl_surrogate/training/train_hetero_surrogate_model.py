@@ -77,8 +77,8 @@ def build_dataloaders(
 
 def build_model(config: Dict[str, Any]) -> nn.Module: # TODO: implement
     model_class = getattr(surrogate_module, config["model"]["class"])
-    dim_feedforward = 2 * config["model"]["model_parameters"]["pipeline_encoder"]["d_model"]
-    config["model"]["model_parameters"]["pipeline_encoder"]["dim_feedforward"] = dim_feedforward
+    dim_feedforward = 2 * config["model"]["model_parameters"]["pipeline_encoder"]["gnn"]["d_model"]
+    config["model"]["model_parameters"]["pipeline_encoder"]["gnn"]["dim_feedforward"] = dim_feedforward
     model = model_class(**{k: v for k, v in config["model"].items() if k != "class"})
     return model
 

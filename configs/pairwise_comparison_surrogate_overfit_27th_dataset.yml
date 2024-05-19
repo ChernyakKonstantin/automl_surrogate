@@ -14,9 +14,9 @@ model:
     - "precision"
     - "kendalltau"
 
-  class: "HeteroPipelineComparisonSurrogateModel"
+  class: "Comparator"
   model_parameters:
-    node_embedder:
+    node_homogenizer:
       op_hyperparams_embedder:
         class: "HyperparametersEmbedder"
         out_dim: 8

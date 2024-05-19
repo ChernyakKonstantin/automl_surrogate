@@ -5,7 +5,7 @@ from automl_surrogate.models import embedding_joiner, hyperparams_embedder, name
 from torch import Tensor
 from automl_surrogate.data import HeterogeneousBatch
 
-class NodeEmbedder(nn.Module):
+class NodeHomogenizer(nn.Module):
     def __init__(
         self,
         op_hyperparams_embedder: Optional[nn.Module] = None,
@@ -53,7 +53,7 @@ class NodeEmbedder(nn.Module):
         # return embeddings
 
 
-def build_node_embedder(model_parameters: Dict[str, Any]) -> NodeEmbedder:
+def build_node_homogenizer(model_parameters: Dict[str, Any]) -> NodeHomogenizer:
     op_hyperparams_embedder = None
     if "op_hyperparams_embedder" in model_parameters:
         config = model_parameters["op_hyperparams_embedder"]
@@ -73,4 +73,4 @@ def build_node_embedder(model_parameters: Dict[str, Any]) -> NodeEmbedder:
             op_hyperparams_embedding_dim=op_hyperparams_embedder.out_dim,
             **{k: v for k, v in config.items() if k != "class"},
         )
-    return NodeEmbedder(op_hyperparams_embedder, op_name_embedder, emebedding_joiner)
+    return NodeHomogenizer(op_hyperparams_embedder, op_name_embedder, emebedding_joiner)

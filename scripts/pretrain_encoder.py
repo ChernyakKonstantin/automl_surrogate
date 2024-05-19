@@ -14,7 +14,7 @@ from automl_surrogate.data.fedot_pipeline_features_extractor import FEDOTPipelin
 from torch.utils.data import Dataset, DataLoader
 import pandas as pd
 import os
-from automl_surrogate.models.node_embedder import NodeEmbedder
+from automl_surrogate.models.node_homogenizer import NodeHomogenizer
 from automl_surrogate.models.embedding_joiner import CatEmbeddingJoiner
 from automl_surrogate.models.hyperparams_embedder import HyperparametersEmbedder, PretrainedHyperparametersEmbedder
 from automl_surrogate.models.name_embedder import NameEmbedder
@@ -73,7 +73,7 @@ class PipelineAE(LightningModule):
             trainable=False,
         )
         joiner = CatEmbeddingJoiner(name_emb.out_dim, hparams_emb.out_dim)
-        self.embedder = NodeEmbedder(
+        self.embedder = NodeHomogenizer(
             op_hyperparams_embedder=hparams_emb,
             op_name_embedder=name_emb,
             emebedding_joiner=joiner,

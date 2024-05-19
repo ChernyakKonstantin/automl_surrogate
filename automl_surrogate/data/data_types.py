@@ -10,11 +10,19 @@ import json
 class HeterogeneousData:
     def __init__(
         self,
-        edge_index: Tensor,
-        node_idxes_per_type: Dict[str, Sequence[int]],
+        edge_index: Tensor = None,
+        node_idxes_per_type: Dict[str, Sequence[int]] = {},
         hparams: Dict[str, Tensor] = {},
         encoded_type: Dict[str, Tensor] = {},
+        skip_init_: bool = False,
     ):
+        if skip_init_:
+            self.edge_index = None
+            self.node_idxes_per_type = None
+            self.hparams = None
+            self.encoded_type = None
+            self.num_nodes = None
+            
         # kwargs should be like `a = torch.rand(2, 4), b = torch.rand(3, 9), ...`
         self.edge_index = edge_index
         self.node_idxes_per_type = {k: torch.LongTensor(v) for k, v in node_idxes_per_type.items()}
@@ -36,17 +44,49 @@ class HeterogeneousData:
                 pass
             self.num_nodes += num_nodes
 
-    # @staticmethod
-    # def from_json(path: str) -> "HeterogeneousData":
-    #     with open(path, "r") as f:
-    #         data = json.load(f)
-    #     instance = HeterogeneousData(None, {}, {})
-    #     instance.__dict__.update(data)
-    #     return instance
+    @staticmethod
+    def from_json(path: str) -> "HeterogeneousData":
+        with open(path, "r") as f:
+            data = json.load(f)
+        instance = HeterogeneousData(skip_init_=True)
+        new = dict()
+        for key, value in data.items():
+            if key == "edge_index":
+                new[key] = torch.LongTensor(value)
+            elif key == "node_idxes_per_type" or key == "encoded_type":
+                temp = {}
+                for key_1, value_1 in value.items():
+                    temp[key_1] = torch.LongTensor(value_1)
+                new[key] = temp
+            elif key == "hparams":
+                temp = {}
+                for key_1, value_1 in value.items():
+                    temp[key_1] = torch.FloatTensor(value_1)
+                new[key] = temp
+            elif key == "num_nodes":
+                new[key] = value
+            else:
+                raise KeyError(f"Unknown key {key}")
+        instance.__dict__.update(new)
+        return instance
 
-    # def to_json(self, path: str):
-    #     with open(path, "w") as f:
-    #         json.dump(self.__dict__, f)
+    def to_json(self, path: str):
+        new = dict()
+        for key, value in self.__dict__.items():
+            if key == "edge_index":
+                new[key] = value.numpy().tolist()
+            elif key == "node_idxes_per_type" or key == "encoded_type" or key == "hparams":
+                temp = {}
+                for key_1, value_1 in value.items():
+                    temp[key_1] = value_1.numpy().tolist()
+                new[key] = temp
+            elif key == "num_nodes":
+                new[key] = value
+            else:
+                raise KeyError(f"Unknown key {key}")
+        
+        with open(path, "w") as f:
+            json.dump(new, f)
 
 
 class HeterogeneousBatch:

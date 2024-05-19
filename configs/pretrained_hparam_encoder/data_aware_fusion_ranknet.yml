@@ -1,0 +1,88 @@
+training_method: train_hetero_surrogate_model
+batch_size: 256
+num_dataloader_workers: 4
+model:
+  weight_decay: 0.0001
+  lr: 0.001
+  # loss_fn: kl_div
+  validation_metrics:
+    - ndcg
+    - precision
+    - kendalltau
+  class: FusionRankNet
+  model_parameters:
+    pipeline_encoder:
+      node_homogenizer:
+        op_hyperparams_embedder:
+          class: "PretrainedHyperparametersEmbedder"
+          autoencoder_ckpt_path: "/home/cherniak/itmo_job/surrogate/experiment_logs/embed_hyperparameters/to_8_with_learnables/mse_loss__no_dropout/checkpoints/epoch=9-step=980.ckpt"
+          out_dim: 8
+          trainable: false
+        op_name_embedder:
+          class: "NameEmbedder"
+          out_dim: 2
+        embedding_joiner:
+          class: "CatEmbeddingJoiner"
+      gnn:
+        type: simple_graph_encoder
+        d_model: 64
+        in_size: null  # This parameter is infered
+        num_heads: 8
+        num_layers: 2
+        dropout: 0.3
+        in_embed: false
+        batch_norm: true
+        gnn_type: graphsage
+        k_hop: 2
+        se: gnn
+        deg: null
+        global_pool: mean
+        use_edge_attr: false
+    dataset_encoder:
+      in_size: 23  # TODO: Make this parameter infered from dataset
+      hidden_dim: 16
+    embedding_joiner:
+      hidden_channels: 16
+      num_layers: 2
+      dropout: 0.0
+      norm: null
+
+dataset_params:
+  train_dataset:
+    root: "/home/cherniak/itmo_job/GAMLET/data/meta_features_and_fedot_pipelines"
+    task_pipe_comb_file: "train_task_pipe_comb.json"
+    meta_features_file: "pymfe.csv"
+    pipelines_dir: "pipelines" # "pipelines_homogeneous_hparams"
+    encode_type: "ordinal"
+    pipelines_per_step: 10
+    normalize: false
+    normalize_meta_features: "minmax"
+  val_dataset:
+    root: "/home/cherniak/itmo_job/GAMLET/data/meta_features_and_fedot_pipelines"
+    task_pipe_comb_file: "test_task_pipe_comb.json"
+    meta_features_file: "pymfe.csv"
+    pipelines_dir: "pipelines" # "pipelines_homogeneous_hparams"
+    encode_type: "ordinal"
+    pipelines_per_step: 10
+    normalize: false
+    normalize_meta_features: "minmax"
+trainer:
+  log_every_n_steps: 20
+  num_sanity_val_steps: 0
+  max_epochs: 100
+  accelerator: cuda
+  devices: auto
+  limit_val_batches: 50
+  check_val_every_n_epoch: 1
+  val_check_interval: 500
+tensorboard_logger:
+  save_dir: /home/cherniak/itmo_job/surrogate/experiment_logs/meta_features_and_fedot_pipelines_(type_and_hparams)/pretrained_hparams_frozen/simple_graph_encoder/rank_over_10/minmax_metafeats
+  name: fusion_ranknet
+model_checkpoint_callback:
+  every_n_train_steps: 500
+  save_top_k: -1
+  save_last: true
+early_stopping_callback:
+  monitor: val_kendalltau
+  mode: max
+  patience: 10

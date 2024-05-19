@@ -9,9 +9,9 @@ model:
     - ndcg
     - precision
     - kendalltau
-  class: HeteroPipelineRankingSurrogateModel
+  class: Ranker
   model_parameters:
-    node_embedder:
+    node_homogenizer:
       op_hyperparams_embedder:
         class: HyperparametersEmbedder
         out_dim: 8
@@ -35,7 +35,7 @@ model:
       deg: null
       global_pool: mean
       use_edge_attr: false
-    mhsa_block:
+    set_rank:
       nhead: 8
       dim_feedforward: 2048
       dropout: 0.1

@@ -4,14 +4,14 @@ num_dataloader_workers: 4
 model:
   weight_decay: 0.0001
   lr: 0.001
-  loss_fn: kl_div
+  # loss_fn: kl_div
   validation_metrics:
     - ndcg
     - precision
     - kendalltau
-  class: DataHeteroPipelineRankingSurrogateModel2
+  class: EarlyFusionRanker
   model_parameters:
-    # node_embedder:
+    # node_homogenizer:
     #   op_hyperparams_embedder:
     #     class: TransitHyperparametersEmbedder
     #     out_dim: 8
@@ -20,41 +20,43 @@ model:
     #     out_dim: 2
     #   embedding_joiner:
     #     class: CatEmbeddingJoiner
-    node_embedder:
-      op_hyperparams_embedder:
-        class: "PretrainedHyperparametersEmbedder"
-        autoencoder_ckpt_path: "/home/cherniak/itmo_job/surrogate/experiment_logs/embed_hyperparameters/to_8_with_learnables/mse_loss__no_dropout/checkpoints/epoch=9-step=980.ckpt"
-        out_dim: 8
-        trainable: false
-      op_name_embedder:
-        class: "NameEmbedder"
-        out_dim: 2
-      embedding_joiner:
-        class: "CatEmbeddingJoiner"
+
     pipeline_encoder:
-      type: simple_graph_encoder
-      d_model: 64
-      in_size: null  # This parameter is infered
-      num_heads: 8
-      num_layers: 2
-      dropout: 0.3
-      in_embed: false
-      batch_norm: true
-      gnn_type: graphsage
-      k_hop: 2
-      se: gnn
-      deg: null
-      global_pool: mean
-      use_edge_attr: false
+      node_homogenizer:
+        op_hyperparams_embedder:
+          class: "PretrainedHyperparametersEmbedder"
+          autoencoder_ckpt_path: "/home/cherniak/itmo_job/surrogate/experiment_logs/embed_hyperparameters/to_8_with_learnables/mse_loss__no_dropout/checkpoints/epoch=9-step=980.ckpt"
+          out_dim: 8
+          trainable: false
+        op_name_embedder:
+          class: "NameEmbedder"
+          out_dim: 2
+        embedding_joiner:
+          class: "CatEmbeddingJoiner"
+      gnn:
+        type: simple_graph_encoder
+        d_model: 64
+        in_size: null  # This parameter is infered
+        num_heads: 8
+        num_layers: 2
+        dropout: 0.3
+        in_embed: false
+        batch_norm: true
+        gnn_type: graphsage
+        k_hop: 2
+        se: gnn
+        deg: null
+        global_pool: mean
+        use_edge_attr: false
     dataset_encoder:
       in_size: 23  # TODO: Make this parameter infered from dataset
       hidden_dim: 16
-    mhca_block:
-      nhead: 8
-      dim_feedforward: 2048
-      dropout: 0.1
-      num_layers: 2
-    mhsa_block:
+    # mhca_block:
+    #   nhead: 8
+    #   dim_feedforward: 2048
+    #   dropout: 0.1
+    #   num_layers: 2
+    set_rank:
       nhead: 8
       dim_feedforward: 2048
       dropout: 0.1
@@ -85,19 +87,17 @@ trainer:
   max_epochs: 100
   accelerator: cuda
   devices: auto
-  # check_val_every_n_epoch : null
-  # val_check_interval: 0.1
+  limit_val_batches: 50
+  check_val_every_n_epoch: 1
+  val_check_interval: 500
 tensorboard_logger:
-  save_dir: /home/cherniak/itmo_job/surrogate/experiment_logs/meta_features_and_fedot_pipelines_(type_and_hparams)/pretrained_hparams_frozen/simple_graph_encoder/rank_over_10/mhsa/early_fusion_concat
-  name: minmax_scale_meta_features
+  save_dir: /home/cherniak/itmo_job/surrogate/experiment_logs/meta_features_and_fedot_pipelines_(type_and_hparams)/pretrained_hparams_frozen/simple_graph_encoder/minmax_metafeats/
+  name: early_fusion_set_rank
 model_checkpoint_callback:
   every_n_train_steps: 500
   save_top_k: -1
-  # monitor: val_ndcg
-  # mode: max
   save_last: true
-  # every_n_epochs: 1
 early_stopping_callback:
-  monitor: val_ndcg
+  monitor: val_kendalltau
   mode: max
   patience: 10
