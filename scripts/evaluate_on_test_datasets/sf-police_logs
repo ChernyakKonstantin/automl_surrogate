@@ -1,0 +1,36 @@
+(gamlet) (base) cherniak@DESKTOP-9R5U2UV:~/itmo_job/surrogate/scripts/evaluate_on_test_datasets$ python evaluate.py
+2024-06-30 22:20:49,121 - Created a temporary directory at /tmp/tmpc1_d831f
+2024-06-30 22:20:49,121 - Writing /tmp/tmpc1_d831f/_remote_module_non_scriptable.py
+sf-police-incidents 0
+Creating surrogate
+Creating FEDOT
+Fitting FEDOT
+2024-06-30 22:22:00,414 - AssumptionsHandler - Initial pipeline fitting started
+2024-06-30 22:27:09,244 - PipelineNode - Trying to fit pipeline node with operation: rf
+2024-06-30 22:27:09,276 - PipelineNode - Fit all parent nodes in secondary node with operation: rf
+2024-06-30 22:27:09,321 - PipelineNode - Trying to fit pipeline node with operation: scaling
+2024-06-30 22:38:49,624 - PipelineNode - Obtain prediction in pipeline node by operation: rf
+2024-06-30 22:38:49,639 - PipelineNode - Fit all parent nodes in secondary node with operation: rf
+2024-06-30 22:38:49,670 - PipelineNode - Obtain prediction in pipeline node by operation: scaling
+2024-06-30 22:39:10,493 - AssumptionsHandler - Initial pipeline was fitted successfully
+2024-06-30 22:39:10,495 - AssumptionsHandler - Memory consumption for fitting of the initial pipeline in main session: current 922.5 MiB, max: 2968.0 MiB
+2024-06-30 22:39:10,627 - ApiComposer - Initial pipeline was fitted in 1030.5 sec.
+2024-06-30 22:39:10,633 - ApiComposer - AutoML configured. Parameters tuning: False. Time limit: 5 min. Set of candidate models: ['lgbm', 'pca', 'bernb', 'scaling', 'rf', 'normalization', 'resample', 'fast_ica', 'dt', 'logit', 'knn', 'qda', 'poly_features', 'isolation_forest_class', 'mlp'].
+2024-06-30 22:39:10,635 - ApiComposer - Timeout is too small for composing and is skipped because fit_time is 1030.4741 sec.
+2024-06-30 22:39:10,816 - ApiComposer - Model generation finished
+2024-06-30 22:39:20,032 - FEDOT logger - Already fitted initial pipeline is used
+2024-06-30 22:39:20,033 - FEDOT logger - Final pipeline: {'depth': 2, 'length': 2, 'nodes': [rf, scaling]}
+rf - {'n_jobs': 1}
+scaling - {}
+2024-06-30 22:39:20,033 - MemoryAnalytics - Memory consumption for finish in main session: current 922.7 MiB, max: 2968.0 MiB
+Predicting FEDOT
+2024-06-30 22:39:23,811 - PipelineNode - Obtain prediction in pipeline node by operation: rf
+2024-06-30 22:39:23,811 - PipelineNode - Fit all parent nodes in secondary node with operation: rf
+2024-06-30 22:39:23,811 - PipelineNode - Obtain prediction in pipeline node by operation: scaling
+2024-06-30 22:39:35,079 - PipelineObjectiveEvaluate - Pipeline (/n_scaling;)/n_rf_{'n_jobs': 1} fit started
+2024-06-30 22:39:36,411 - PipelineNode - Obtain prediction in pipeline node by operation: rf
+2024-06-30 22:39:36,411 - PipelineNode - Fit all parent nodes in secondary node with operation: rf
+2024-06-30 22:39:36,411 - PipelineNode - Obtain prediction in pipeline node by operation: scaling
+2024-06-30 22:39:47,649 - PipelineObjectiveEvaluate - Pipeline (/n_scaling;)/n_rf_{'n_jobs': 1} with evaluated metrics: (-0.673,)
+{'roc_auc': 0.673}
+(gamlet) (base) cherniak@DESKTOP-9R5U2UV:~/itmo_job/surrogate/scripts/evaluate_on_test_datasets$ 

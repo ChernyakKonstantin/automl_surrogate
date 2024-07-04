@@ -1,0 +1,90 @@
+(gamlet) (base) cherniak@DESKTOP-9R5U2UV:~/itmo_job/surrogate/scripts/evaluate_on_test_datasets$ python evaluate.py
+2024-06-30 22:42:44,461 - Created a temporary directory at /tmp/tmpoy3w6h27
+2024-06-30 22:42:44,462 - Writing /tmp/tmpoy3w6h27/_remote_module_non_scriptable.py
+sf-police-incidents 0
+Usual FEDOT
+Creating FEDOT
+Fitting FEDOT
+2024-06-30 22:43:54,239 - deprecate positional args: graphviz.backend.piping.pipe(['renderer', 'formatter', 'neato_no_op', 'quiet'])
+2024-06-30 22:43:54,241 - deprecate positional args: graphviz.backend.rendering.render(['renderer', 'formatter', 'neato_no_op', 'quiet'])
+2024-06-30 22:43:54,244 - deprecate positional args: graphviz.backend.unflattening.unflatten(['stagger', 'fanout', 'chain', 'encoding'])
+2024-06-30 22:43:54,245 - deprecate positional args: graphviz.backend.viewing.view(['quiet'])
+2024-06-30 22:43:54,254 - deprecate positional args: graphviz.quoting.quote(['is_html_string', 'is_valid_id', 'dot_keywords', 'endswith_odd_number_of_backslashes', 'escape_unescaped_quotes'])
+2024-06-30 22:43:54,255 - deprecate positional args: graphviz.quoting.a_list(['kwargs', 'attributes'])
+2024-06-30 22:43:54,255 - deprecate positional args: graphviz.quoting.attr_list(['kwargs', 'attributes'])
+2024-06-30 22:43:54,256 - deprecate positional args: graphviz.dot.Dot.clear(['keep_attrs'])
+2024-06-30 22:43:54,257 - deprecate positional args: graphviz.dot.Dot.__iter__(['subgraph'])
+2024-06-30 22:43:54,257 - deprecate positional args: graphviz.dot.Dot.node(['_attributes'])
+2024-06-30 22:43:54,258 - deprecate positional args: graphviz.dot.Dot.edge(['_attributes'])
+2024-06-30 22:43:54,258 - deprecate positional args: graphviz.dot.Dot.attr(['_attributes'])
+2024-06-30 22:43:54,259 - deprecate positional args: graphviz.dot.Dot.subgraph(['name', 'comment', 'graph_attr', 'node_attr', 'edge_attr', 'body'])
+2024-06-30 22:43:54,262 - deprecate positional args: graphviz.piping.Pipe._pipe_legacy(['renderer', 'formatter', 'neato_no_op', 'quiet'])
+2024-06-30 22:43:54,265 - deprecate positional args: graphviz.saving.Save.save(['directory'])
+2024-06-30 22:43:54,266 - deprecate positional args: graphviz.rendering.Render.render(['directory', 'view', 'cleanup', 'format', 'renderer', 'formatter', 'neato_no_op', 'quiet', 'quiet_view'])
+2024-06-30 22:43:54,267 - deprecate positional args: graphviz.rendering.Render.view(['directory', 'cleanup', 'quiet', 'quiet_view'])
+2024-06-30 22:43:54,268 - deprecate positional args: graphviz.unflattening.Unflatten.unflatten(['stagger', 'fanout', 'chain'])
+2024-06-30 22:43:54,269 - deprecate positional args: graphviz.graphs.BaseGraph.__init__(['comment', 'filename', 'directory', 'format', 'engine', 'encoding', 'graph_attr', 'node_attr', 'edge_attr', 'body', 'strict'])
+2024-06-30 22:43:54,271 - deprecate positional args: graphviz.sources.Source.from_file(['directory', 'format', 'engine', 'encoding', 'renderer', 'formatter'])
+2024-06-30 22:43:54,272 - deprecate positional args: graphviz.sources.Source.__init__(['filename', 'directory', 'format', 'engine', 'encoding'])
+2024-06-30 22:43:54,273 - deprecate positional args: graphviz.sources.Source.save(['directory'])
+2024-06-30 22:43:55,115 - Requirements - "tensorflow" is not installed, use "pip install fedot[extra]" to fulfil requirement or ignore this warning
+2024-06-30 22:43:55,141 - Requirements - "nltk" is not installed, use "pip install fedot[extra]" to fulfil requirement or ignore this warning
+2024-06-30 22:43:55,431 - AssumptionsHandler - Initial pipeline fitting started
+2024-06-30 22:44:43,385 - PipelineNode - Trying to fit pipeline node with operation: rf
+2024-06-30 22:44:43,420 - PipelineNode - Fit all parent nodes in secondary node with operation: rf
+2024-06-30 22:44:43,470 - PipelineNode - Trying to fit pipeline node with operation: scaling
+2024-06-30 22:54:25,089 - PipelineNode - Obtain prediction in pipeline node by operation: rf
+2024-06-30 22:54:25,111 - PipelineNode - Fit all parent nodes in secondary node with operation: rf
+2024-06-30 22:54:25,146 - PipelineNode - Obtain prediction in pipeline node by operation: scaling
+2024-06-30 22:54:46,360 - AssumptionsHandler - Initial pipeline was fitted successfully
+2024-06-30 22:54:46,364 - AssumptionsHandler - Memory consumption for fitting of the initial pipeline in main session: current 944.7 MiB, max: 2990.2 MiB
+2024-06-30 22:54:46,495 - ApiComposer - Initial pipeline was fitted in 651.3 sec.
+2024-06-30 22:54:46,597 - ApiComposer - AutoML configured. Parameters tuning: False. Time limit: 5 min. Set of candidate models: ['knn', 'dt', 'isolation_forest_class', 'scaling', 'lgbm', 'bernb', 'qda', 'rf', 'resample', 'mlp', 'poly_features', 'logit', 'pca', 'fast_ica', 'normalization'].
+2024-06-30 22:54:46,672 - ApiComposer - Timeout is too small for composing and is skipped because fit_time is 651.326571 sec.
+2024-06-30 22:54:51,567 - ApiComposer - Model generation finished
+2024-06-30 22:55:01,408 - FEDOT logger - Already fitted initial pipeline is used
+2024-06-30 22:55:01,409 - FEDOT logger - Final pipeline: {'depth': 2, 'length': 2, 'nodes': [rf, scaling]}
+rf - {'n_jobs': 1}
+scaling - {}
+2024-06-30 22:55:01,410 - MemoryAnalytics - Memory consumption for finish in main session: current 944.8 MiB, max: 2990.2 MiB
+Predicting FEDOT
+2024-06-30 22:55:47,948 - PipelineNode - Obtain prediction in pipeline node by operation: rf
+2024-06-30 22:55:47,950 - PipelineNode - Fit all parent nodes in secondary node with operation: rf
+2024-06-30 22:55:47,951 - PipelineNode - Obtain prediction in pipeline node by operation: scaling
+2024-06-30 22:57:44,229 - PipelineObjectiveEvaluate - Pipeline (/n_scaling;)/n_rf_{'n_jobs': 1} fit started
+2024-06-30 22:58:03,141 - PipelineNode - Obtain prediction in pipeline node by operation: rf
+2024-06-30 22:58:03,143 - PipelineNode - Fit all parent nodes in secondary node with operation: rf
+2024-06-30 22:58:03,144 - PipelineNode - Obtain prediction in pipeline node by operation: scaling
+2024-06-30 22:59:49,724 - PipelineObjectiveEvaluate - Pipeline (/n_scaling;)/n_rf_{'n_jobs': 1} with evaluated metrics: (-0.951,)
+{'roc_auc': 0.951}
+Creating surrogate
+Creating FEDOT
+Fitting FEDOT
+2024-06-30 23:00:58,902 - AssumptionsHandler - Initial pipeline fitting started
+2024-06-30 23:01:40,068 - PipelineNode - Trying to fit pipeline node with operation: rf
+2024-06-30 23:01:40,098 - PipelineNode - Fit all parent nodes in secondary node with operation: rf
+2024-06-30 23:01:40,135 - PipelineNode - Trying to fit pipeline node with operation: scaling
+2024-06-30 23:11:20,567 - PipelineNode - Obtain prediction in pipeline node by operation: rf
+2024-06-30 23:11:20,590 - PipelineNode - Fit all parent nodes in secondary node with operation: rf
+2024-06-30 23:11:20,628 - PipelineNode - Obtain prediction in pipeline node by operation: scaling
+2024-06-30 23:11:41,127 - AssumptionsHandler - Initial pipeline was fitted successfully
+2024-06-30 23:11:41,128 - AssumptionsHandler - Memory consumption for fitting of the initial pipeline in main session: current 922.1 MiB, max: 2967.7 MiB
+2024-06-30 23:11:41,247 - ApiComposer - Initial pipeline was fitted in 642.6 sec.
+2024-06-30 23:11:41,275 - ApiComposer - AutoML configured. Parameters tuning: False. Time limit: 5 min. Set of candidate models: ['knn', 'dt', 'isolation_forest_class', 'scaling', 'lgbm', 'bernb', 'qda', 'rf', 'resample', 'mlp', 'poly_features', 'logit', 'pca', 'fast_ica', 'normalization'].
+2024-06-30 23:11:41,306 - ApiComposer - Timeout is too small for composing and is skipped because fit_time is 642.589295 sec.
+2024-06-30 23:11:44,860 - ApiComposer - Model generation finished
+2024-06-30 23:11:54,651 - FEDOT logger - Already fitted initial pipeline is used
+2024-06-30 23:11:54,652 - FEDOT logger - Final pipeline: {'depth': 2, 'length': 2, 'nodes': [rf, scaling]}
+rf - {'n_jobs': 1}
+scaling - {}
+2024-06-30 23:11:54,652 - MemoryAnalytics - Memory consumption for finish in main session: current 922.1 MiB, max: 2967.7 MiB
+Predicting FEDOT
+2024-06-30 23:11:58,431 - PipelineNode - Obtain prediction in pipeline node by operation: rf
+2024-06-30 23:11:58,431 - PipelineNode - Fit all parent nodes in secondary node with operation: rf
+2024-06-30 23:11:58,431 - PipelineNode - Obtain prediction in pipeline node by operation: scaling
+2024-06-30 23:12:09,721 - PipelineObjectiveEvaluate - Pipeline (/n_scaling;)/n_rf_{'n_jobs': 1} fit started
+2024-06-30 23:12:11,072 - PipelineNode - Obtain prediction in pipeline node by operation: rf
+2024-06-30 23:12:11,073 - PipelineNode - Fit all parent nodes in secondary node with operation: rf
+2024-06-30 23:12:11,073 - PipelineNode - Obtain prediction in pipeline node by operation: scaling
+2024-06-30 23:12:22,506 - PipelineObjectiveEvaluate - Pipeline (/n_scaling;)/n_rf_{'n_jobs': 1} with evaluated metrics: (-0.673,)
+{'roc_auc': 0.673} 
