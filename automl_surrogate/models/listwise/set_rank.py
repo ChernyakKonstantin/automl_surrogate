@@ -1,6 +1,7 @@
 import torch.nn as nn
 from torch import Tensor
 
+
 class SetRank(nn.Module):
     def __init__(self, in_dim: int, nhead: int, dim_feedforward: int, dropout: int, num_layers: int):
         super().__init__()

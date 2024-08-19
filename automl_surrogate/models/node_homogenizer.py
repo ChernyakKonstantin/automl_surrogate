@@ -1,9 +1,11 @@
 from typing import Any, Dict, Optional
 
 import torch.nn as nn
-from automl_surrogate.models import embedding_joiner, hyperparams_embedder, name_embedder
 from torch import Tensor
+
 from automl_surrogate.data import HeterogeneousBatch
+from automl_surrogate.models import embedding_joiner, hyperparams_embedder, name_embedder
+
 
 class NodeHomogenizer(nn.Module):
     def __init__(

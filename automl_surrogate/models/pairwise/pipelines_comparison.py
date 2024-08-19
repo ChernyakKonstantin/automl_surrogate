@@ -1,12 +1,15 @@
-from typing import Any, Dict, List, Tuple, Sequence
+from typing import Any, Dict, List, Sequence, Tuple
+
 import torch
-from torch import Tensor
-from automl_surrogate.data import HeterogeneousBatch
-import automl_surrogate.metrics as metrics_module
 import torch.nn.functional as F
+from torch import Tensor
+
+import automl_surrogate.metrics as metrics_module
+from automl_surrogate.data import HeterogeneousBatch
 from automl_surrogate.models.base import BaseSurrogate
-from automl_surrogate.models.pairwise.direct_ranker import DirectRanker
 from automl_surrogate.models.pairwise.bubble_sort import bubble_argsort
+from automl_surrogate.models.pairwise.direct_ranker import DirectRanker
+
 
 class Comparator(BaseSurrogate):
     def __init__(
@@ -30,7 +33,7 @@ class Comparator(BaseSurrogate):
         # Sort each pool of candidates in descending order
         indices = y.argsort(dim=1, descending=True)
         # [BATCH, N, HIDDEN]
-        pipelines_embeddings = torch.stack([self.pipeline_encoder(h_p) for h_p in heterogen_pipelines]).permute(1,0,2)
+        pipelines_embeddings = torch.stack([self.pipeline_encoder(h_p) for h_p in heterogen_pipelines]).permute(1, 0, 2)
         sorted_candidates = pipelines_embeddings[:, indices]
         # [BATCH * (N-1), HIDDEN]
         better_candidates = sorted_candidates[:, :-1].flatten(0, 1)
@@ -53,7 +56,9 @@ class Comparator(BaseSurrogate):
 
         with torch.no_grad():
             # [BATCH, N, HIDDEN]
-            pipelines_embeddings = torch.stack([self.pipeline_encoder(h_p) for h_p in heterogen_pipelines]).permute(1,0,2)
+            pipelines_embeddings = torch.stack([self.pipeline_encoder(h_p) for h_p in heterogen_pipelines]).permute(
+                1, 0, 2
+            )
             sorted_indices = bubble_argsort(self.comparator, pipelines_embeddings, self.device)
 
             seq_len = pipelines_embeddings.shape[1]

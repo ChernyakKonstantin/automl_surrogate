@@ -1,19 +1,21 @@
-from typing import Any, Dict, List, Tuple, Sequence
+from typing import Any, Dict, Iterable, List, Sequence, Tuple
+
 import numpy as np
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
+import torch.optim as optim
 from pytorch_lightning import LightningModule
 from torch import Tensor
 from torch_geometric.data import Batch
-import torch.optim as optim
-from automl_surrogate.data import HeterogeneousBatch
-from automl_surrogate.layers.encoders import GraphTransformer, SimpleGNNEncoder
-from automl_surrogate.models.node_homogenizer import build_node_homogenizer
+
 import automl_surrogate.losses as losses_module
 import automl_surrogate.metrics as metrics_module
-import torch.nn.functional as F
-from typing import Iterable
+from automl_surrogate.data import HeterogeneousBatch
+from automl_surrogate.layers.encoders import GraphTransformer, SimpleGNNEncoder
 from automl_surrogate.layers.pipeline_encoder import PipelineEncoder
+from automl_surrogate.models.node_homogenizer import build_node_homogenizer
+
 
 class BaseSurrogate(LightningModule):
     # Implements a pipeline encoding and model training.
@@ -29,7 +31,6 @@ class BaseSurrogate(LightningModule):
         self.weight_decay = weight_decay
         self.validation_metrics = validation_metrics
         self.pipeline_encoder = PipelineEncoder(model_parameters["pipeline_encoder"])
-
 
     def forward(self, heterogen_pipelines: Sequence[HeterogeneousBatch]) -> Tensor:
         raise NotImplementedError("The method should be overriden.")
@@ -101,7 +102,9 @@ class BaseSurrogate(LightningModule):
             heterogen_batch.batch = heterogen_batch.batch.to(device)
             heterogen_batch.ptr = heterogen_batch.ptr.to(device)
             heterogen_batch.edge_index = heterogen_batch.edge_index.to(device)
-            heterogen_batch.node_idxes_per_type = {k: v.to(device) for k, v in heterogen_batch.node_idxes_per_type.items()}
+            heterogen_batch.node_idxes_per_type = {
+                k: v.to(device) for k, v in heterogen_batch.node_idxes_per_type.items()
+            }
             heterogen_batch.hparams = {k: v.to(device) for k, v in heterogen_batch.hparams.items()}
             heterogen_batch.encoded_type = {k: v.to(device) for k, v in heterogen_batch.encoded_type.items()}
             return heterogen_batch

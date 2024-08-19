@@ -1,13 +1,16 @@
-from typing import Any, Dict, List, Tuple, Sequence
+from typing import Any, Dict, List, Sequence, Tuple
+
 import torch
 import torch.nn as nn
-from torch import Tensor
-from automl_surrogate.data import HeterogeneousBatch
-import automl_surrogate.metrics as metrics_module
 import torch.nn.functional as F
-from automl_surrogate.models.base import BaseSurrogate
-from automl_surrogate.layers.dataset_encoder import DatasetEncoder
+from torch import Tensor
 from torch_geometric.nn.models import MLP
+
+import automl_surrogate.metrics as metrics_module
+from automl_surrogate.data import HeterogeneousBatch
+from automl_surrogate.layers.dataset_encoder import DatasetEncoder
+from automl_surrogate.models.base import BaseSurrogate
+
 
 class FusionRankNet(BaseSurrogate):
     def __init__(
@@ -31,7 +34,7 @@ class FusionRankNet(BaseSurrogate):
 
     def forward(self, heterogen_pipelines: Sequence[HeterogeneousBatch], dataset: Tensor) -> Tensor:
         # [BATCH, N, HIDDEN_1]
-        pipelines_embeddings = torch.stack([self.pipeline_encoder(h_p) for h_p in heterogen_pipelines]).permute(1,0,2)
+        pipelines_embeddings = torch.stack([self.pipeline_encoder(h_p) for h_p in heterogen_pipelines]).permute(1, 0, 2)
         n_pipelines = pipelines_embeddings.shape[1]
         # [BATCH, N, HIDDEN_2]
         dataset_embeddings = self.dataset_encoder(dataset).unsqueeze(1).repeat(1, n_pipelines, 1)

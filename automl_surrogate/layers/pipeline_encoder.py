@@ -1,10 +1,12 @@
+from typing import Any, Dict
+
 import torch.nn as nn
 from torch import Tensor
-from typing import Dict, Any
-from automl_surrogate.data import HeterogeneousBatch
 from torch_geometric.data import Batch
+
+from automl_surrogate.data import HeterogeneousBatch
+from automl_surrogate.layers.encoders import GraphTransformer, SimpleGNNEncoder
 from automl_surrogate.models.node_homogenizer import build_node_homogenizer
-from automl_surrogate.layers.encoders import SimpleGNNEncoder, GraphTransformer
 
 
 class PipelineEncoder(nn.Module):

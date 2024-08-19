@@ -1,17 +1,19 @@
-from typing import Any, Dict, List, Tuple, Sequence, Union, Callable
-from torch import Tensor
-from automl_surrogate.data import HeterogeneousBatch
-import torch.nn as nn
+from typing import Any, Callable, Dict, List, Sequence, Tuple, Union
+
 import torch
-import automl_surrogate.metrics as metrics_module
+import torch.nn as nn
 import torch.nn.functional as F
+from torch import Tensor
 from torch.nn.modules.transformer import _get_activation_fn
+
+import automl_surrogate.metrics as metrics_module
+from automl_surrogate.data import HeterogeneousBatch
+from automl_surrogate.layers.dataset_encoder import DatasetEncoder
 from automl_surrogate.models.base import BaseSurrogate
 from automl_surrogate.models.listwise.set_rank import SetRank
-from automl_surrogate.layers.dataset_encoder import DatasetEncoder
+
 
 class BaseDataAwareRanker(BaseSurrogate):
-
     def training_step(
         self,
         batch: Tuple[Sequence[HeterogeneousBatch], Tensor, Tensor],
@@ -49,8 +51,8 @@ class BaseDataAwareRanker(BaseSurrogate):
             metric_fn = getattr(metrics_module, "kendalltau")
             self.log(f"{prefix}_kendalltau", metric_fn(y.cpu(), scores.cpu()))
 
-class CrossAttentionTransformerEncoder(nn.TransformerEncoder):
 
+class CrossAttentionTransformerEncoder(nn.TransformerEncoder):
     def forward(self, q: Tensor, kv: Tensor) -> Tensor:
         for mod in self.layers:
             output = mod(q, kv)
@@ -60,15 +62,26 @@ class CrossAttentionTransformerEncoder(nn.TransformerEncoder):
 
         return output
 
+
 class CrossAttentionTransformerEncoderLayer(nn.TransformerEncoderLayer):
-    def __init__(self, d_model: int, kdim: int, nhead: int, dim_feedforward: int = 2048, dropout: float = 0.1,
-                 activation: Union[str, Callable[[Tensor], Tensor]] = F.relu,
-                 layer_norm_eps: float = 1e-5, batch_first: bool = False, device=None,
-                 dtype=None) -> None:
-        factory_kwargs = {'device': device, 'dtype': dtype}
+    def __init__(
+        self,
+        d_model: int,
+        kdim: int,
+        nhead: int,
+        dim_feedforward: int = 2048,
+        dropout: float = 0.1,
+        activation: Union[str, Callable[[Tensor], Tensor]] = F.relu,
+        layer_norm_eps: float = 1e-5,
+        batch_first: bool = False,
+        device=None,
+        dtype=None,
+    ) -> None:
+        factory_kwargs = {"device": device, "dtype": dtype}
         super(nn.TransformerEncoderLayer, self).__init__()
-        self.cross_attn = nn.MultiheadAttention(d_model, nhead, dropout=dropout, batch_first=batch_first,
-                                               kdim=kdim, vdim=kdim, **factory_kwargs)
+        self.cross_attn = nn.MultiheadAttention(
+            d_model, nhead, dropout=dropout, batch_first=batch_first, kdim=kdim, vdim=kdim, **factory_kwargs
+        )
         # Implementation of Feedforward model
         self.linear1 = nn.Linear(d_model, dim_feedforward, **factory_kwargs)
         self.dropout = nn.Dropout(dropout)
@@ -97,8 +110,18 @@ class CrossAttentionTransformerEncoderLayer(nn.TransformerEncoderLayer):
         x = self.cross_attn(query, kv, kv, need_weights=False)[0]
         return self.dropout1(x)
 
+
 class FusionSetRank(nn.Module):
-    def __init__(self, in_dim: int, nhead: int, dim_feedforward: int, dropout: int, num_layers: int, mhca_block_params: dict, dataset_dim: int):
+    def __init__(
+        self,
+        in_dim: int,
+        nhead: int,
+        dim_feedforward: int,
+        dropout: int,
+        num_layers: int,
+        mhca_block_params: dict,
+        dataset_dim: int,
+    ):
         super().__init__()
         transformer_layer = nn.TransformerEncoderLayer(
             d_model=in_dim,
@@ -145,6 +168,7 @@ class FusionSetRank(nn.Module):
         # Output shape is [BATCH, N]
         return scores
 
+
 class LateFusionRanker(BaseDataAwareRanker):
     def __init__(
         self,
@@ -164,7 +188,7 @@ class LateFusionRanker(BaseDataAwareRanker):
 
     def forward(self, heterogen_pipelines: Sequence[HeterogeneousBatch], dataset: Tensor) -> Tensor:
         # [BATCH, N, HIDDEN_1]
-        pipelines_embeddings = torch.stack([self.pipeline_encoder(h_p) for h_p in heterogen_pipelines]).permute(1,0,2)
+        pipelines_embeddings = torch.stack([self.pipeline_encoder(h_p) for h_p in heterogen_pipelines]).permute(1, 0, 2)
         # [BATCH, HIDDEN_2]
         dataset_embeddings = self.dataset_encoder(dataset)
         # [BATCH, N]
@@ -190,7 +214,7 @@ class EarlyFusionRanker(BaseDataAwareRanker):
 
     def forward(self, heterogen_pipelines: Sequence[HeterogeneousBatch], dataset: Tensor) -> Tensor:
         # [BATCH, N, HIDDEN_1]
-        pipelines_embeddings = torch.stack([self.pipeline_encoder(h_p) for h_p in heterogen_pipelines]).permute(1,0,2)
+        pipelines_embeddings = torch.stack([self.pipeline_encoder(h_p) for h_p in heterogen_pipelines]).permute(1, 0, 2)
         n_pipelines = pipelines_embeddings.shape[1]
         # [BATCH, N, HIDDEN_2]
         dataset_embeddings = self.dataset_encoder(dataset).unsqueeze(1).repeat(1, n_pipelines, 1)

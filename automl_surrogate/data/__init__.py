@@ -1,9 +1,6 @@
-from .data_types import HeterogeneousData, HeterogeneousBatch
-from .dataset import HeteroPipelineDataset, HeteroPipelineAndDatasetFeaturesDataset
+from .data_types import HeterogeneousBatch, HeterogeneousData
 
 __all__ = [
     "HeterogeneousData",
     "HeterogeneousBatch",
-    "HeteroPipelineDataset",
-    "HeteroPipelineAndDatasetFeaturesDataset",
 ]

@@ -115,6 +115,7 @@ class PretrainedHyperparametersEmbedder(HyperparametersEmbedder):
             with torch.no_grad():
                 return super().forward(x)
 
+
 class TransitHyperparametersEmbedder:
     def __init__(self, out_dim: int = DEFAULT_OUT_DIM):
         self.out_dim = out_dim

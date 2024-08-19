@@ -1,10 +1,10 @@
+import json
 from collections import defaultdict
 from typing import Dict, Sequence
 
 import torch
 from torch import Tensor
 from torch_geometric.data import Batch
-import json
 
 
 class HeterogeneousData:
@@ -22,7 +22,7 @@ class HeterogeneousData:
             self.hparams = None
             self.encoded_type = None
             self.num_nodes = None
-            
+
         # kwargs should be like `a = torch.rand(2, 4), b = torch.rand(3, 9), ...`
         self.edge_index = edge_index
         self.node_idxes_per_type = {k: torch.LongTensor(v) for k, v in node_idxes_per_type.items()}
@@ -84,7 +84,7 @@ class HeterogeneousData:
                 new[key] = value
             else:
                 raise KeyError(f"Unknown key {key}")
-        
+
         with open(path, "w") as f:
             json.dump(new, f)
 
@@ -171,6 +171,7 @@ class HeterogeneousBatch:
         except KeyError:
             pass
         return res
+
 
 # # For GNN pretraining
 # from torch.nested import nested_tensor

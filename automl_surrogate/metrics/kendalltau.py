@@ -1,6 +1,6 @@
+import numpy as np
 from scipy.stats import kendalltau as kendalltau_
 from torch import Tensor
-import numpy as np
 
 
 def kendalltau(true_scores: Tensor, pred_scores: Tensor, top_k: int = None) -> float:

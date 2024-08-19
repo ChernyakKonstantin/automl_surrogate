@@ -1,10 +1,12 @@
-from typing import Any, Dict, List, Tuple, Sequence
+from typing import Any, Dict, List, Sequence, Tuple
+
 import torch
 import torch.nn as nn
-from torch import Tensor
-from automl_surrogate.data import HeterogeneousBatch
-import automl_surrogate.metrics as metrics_module
 import torch.nn.functional as F
+from torch import Tensor
+
+import automl_surrogate.metrics as metrics_module
+from automl_surrogate.data import HeterogeneousBatch
 from automl_surrogate.models.base import BaseSurrogate
 from automl_surrogate.models.listwise.set_rank import SetRank
 
@@ -23,7 +25,7 @@ class Ranker(BaseSurrogate):
 
     def forward(self, heterogen_pipelines: Sequence[HeterogeneousBatch]) -> Tensor:
         # [BATCH, N, HIDDEN]
-        pipelines_embeddings = torch.stack([self.pipeline_encoder(h_p) for h_p in heterogen_pipelines]).permute(1,0,2)
+        pipelines_embeddings = torch.stack([self.pipeline_encoder(h_p) for h_p in heterogen_pipelines]).permute(1, 0, 2)
         # [BATCH, N]
         scores = self.set_rank(pipelines_embeddings)
         return scores
@@ -51,7 +53,7 @@ class Ranker(BaseSurrogate):
     ):
         heterogen_pipelines, y = batch
         y = torch.softmax(y, dim=1)
-        
+
         with torch.no_grad():
             scores = self.forward(heterogen_pipelines)
 

@@ -11,8 +11,7 @@ def count_parameters(model):
 def dense_to_sparse_tensor(matrix):
     rows, columns = torch.where(matrix > 0)
     values = torch.ones(rows.shape)
-    indices = torch.from_numpy(np.vstack((rows,
-                                          columns))).long()
+    indices = torch.from_numpy(np.vstack((rows, columns))).long()
     shape = torch.Size(matrix.shape)
     return torch.sparse.FloatTensor(indices, values, shape)
 
@@ -22,15 +21,11 @@ def add_zeros(data):
     return data
 
 
-def extract_node_feature(data, reduce='add'):
-    if reduce in ['mean', 'max', 'add']:
-        data.x = scatter(data.edge_attr,
-                         data.edge_index[0],
-                         dim=0,
-                         dim_size=data.num_nodes,
-                         reduce=reduce)
+def extract_node_feature(data, reduce="add"):
+    if reduce in ["mean", "max", "add"]:
+        data.x = scatter(data.edge_attr, data.edge_index[0], dim=0, dim_size=data.num_nodes, reduce=reduce)
     else:
-        raise Exception('Unknown Aggregation Type')
+        raise Exception("Unknown Aggregation Type")
     return data
 
 
@@ -58,11 +53,11 @@ def pad_batch(x, ptr, return_mask=False):
         num_node = ptr[i + 1] - ptr[i]
         if isinstance(x, (list, tuple)):
             for j in range(len(x)):
-                new_x[j][i][:num_node] = x[j][ptr[i]:ptr[i + 1]]
+                new_x[j][i][:num_node] = x[j][ptr[i] : ptr[i + 1]]
                 if cls_tokens:
                     new_x[j][i][-1] = x[j][all_num_nodes + i]
         else:
-            new_x[i][:num_node] = x[ptr[i]:ptr[i + 1]]
+            new_x[i][:num_node] = x[ptr[i] : ptr[i + 1]]
             if cls_tokens:
                 new_x[i][-1] = x[all_num_nodes + i]
         if return_mask:
@@ -85,7 +80,7 @@ def unpad_batch(x, ptr):
         all_num_nodes += bsz
     new_x = x.new_zeros(all_num_nodes, d)
     for i in range(bsz):
-        new_x[ptr[i]:ptr[i + 1]] = x[i][:ptr[i + 1] - ptr[i]]
+        new_x[ptr[i] : ptr[i + 1]] = x[i][: ptr[i + 1] - ptr[i]]
         if cls_tokens:
             new_x[num_nodes + i] = x[i][-1]
     return new_x

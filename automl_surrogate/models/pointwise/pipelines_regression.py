@@ -1,11 +1,14 @@
-from typing import Any, Dict, List, Tuple, Sequence
+from typing import Any, Dict, List, Sequence, Tuple
+
 import torch
 import torch.nn as nn
-from torch import Tensor
-from automl_surrogate.data import HeterogeneousBatch
-import automl_surrogate.metrics as metrics_module
 import torch.nn.functional as F
+from torch import Tensor
+
+import automl_surrogate.metrics as metrics_module
+from automl_surrogate.data import HeterogeneousBatch
 from automl_surrogate.models.base import BaseSurrogate
+
 
 class RankNet(BaseSurrogate):
     # Same hypothesis as in https://arxiv.org/pdf/1912.05891.pdf
@@ -21,7 +24,7 @@ class RankNet(BaseSurrogate):
 
     def forward(self, heterogen_pipelines: Sequence[HeterogeneousBatch]) -> Tensor:
         # [BATCH, N, HIDDEN]
-        pipelines_embeddings = torch.stack([self.pipeline_encoder(h_p) for h_p in heterogen_pipelines]).permute(1,0,2)
+        pipelines_embeddings = torch.stack([self.pipeline_encoder(h_p) for h_p in heterogen_pipelines]).permute(1, 0, 2)
         # [BATCH, N]
         scores = self.linear(pipelines_embeddings).squeeze(2)
         return scores

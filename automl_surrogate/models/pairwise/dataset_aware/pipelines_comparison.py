@@ -1,14 +1,17 @@
-from typing import Any, Dict, List, Tuple, Sequence
+from typing import Any, Dict, List, Sequence, Tuple
+
 import torch
-from torch import Tensor
-from automl_surrogate.data import HeterogeneousBatch
-import automl_surrogate.metrics as metrics_module
 import torch.nn.functional as F
-from automl_surrogate.models.base import BaseSurrogate
-from automl_surrogate.models.pairwise.direct_ranker import DirectRanker, FusionDirectRanker
-from automl_surrogate.layers.dataset_encoder import DatasetEncoder
-from automl_surrogate.models.pairwise.bubble_sort import bubble_argsort
+from torch import Tensor
 from torch_geometric.nn.models import MLP
+
+import automl_surrogate.metrics as metrics_module
+from automl_surrogate.data import HeterogeneousBatch
+from automl_surrogate.layers.dataset_encoder import DatasetEncoder
+from automl_surrogate.models.base import BaseSurrogate
+from automl_surrogate.models.pairwise.bubble_sort import bubble_argsort
+from automl_surrogate.models.pairwise.direct_ranker import DirectRanker, FusionDirectRanker
+
 
 class EarlyFusionComparator(BaseSurrogate):
     def __init__(
@@ -27,14 +30,14 @@ class EarlyFusionComparator(BaseSurrogate):
             num_layers=model_parameters["embedding_joiner"]["num_layers"],
             dropout=model_parameters["embedding_joiner"]["dropout"],
             norm=model_parameters["embedding_joiner"]["norm"],
-            bias=[True]*(model_parameters["embedding_joiner"]["num_layers"]-1) + [False],
+            bias=[True] * (model_parameters["embedding_joiner"]["num_layers"] - 1) + [False],
         )
         self.embedding_joiner.out_dim = self.embedding_joiner.out_channels
         self.comparator = DirectRanker(in_dim=self.embedding_joiner.out_dim)
 
     def embed_inputs(self, heterogen_pipelines: Sequence[HeterogeneousBatch], dataset: Tensor) -> Tensor:
         # [BATCH, N, HIDDEN_1]
-        pipelines_embeddings = torch.stack([self.pipeline_encoder(h_p) for h_p in heterogen_pipelines]).permute(1,0,2)
+        pipelines_embeddings = torch.stack([self.pipeline_encoder(h_p) for h_p in heterogen_pipelines]).permute(1, 0, 2)
         n_pipelines = pipelines_embeddings.shape[1]
         # [BATCH, N, HIDDEN_2]
         dataset_embeddings = self.dataset_encoder(dataset).unsqueeze(1).repeat(1, n_pipelines, 1)
@@ -103,6 +106,7 @@ class EarlyFusionComparator(BaseSurrogate):
             metric_fn = getattr(metrics_module, "kendalltau")
             self.log(f"{prefix}_kendalltau", metric_fn(y.cpu(), scores.cpu()))
 
+
 class LateFusionComparator(BaseSurrogate):
     def __init__(
         self,
@@ -127,7 +131,7 @@ class LateFusionComparator(BaseSurrogate):
         # Sort each pool of candidates in descending order
         indices = y.argsort(dim=1, descending=True)
         # [BATCH, N, HIDDEN_1]
-        pipelines_embeddings = torch.stack([self.pipeline_encoder(h_p) for h_p in heterogen_pipelines]).permute(1,0,2)
+        pipelines_embeddings = torch.stack([self.pipeline_encoder(h_p) for h_p in heterogen_pipelines]).permute(1, 0, 2)
         # [BATCH, N, HIDDEN_2]
         dataset_embeddings = self.dataset_encoder(dataset)
 
@@ -137,11 +141,11 @@ class LateFusionComparator(BaseSurrogate):
         # [BATCH * (N-1), HIDDEN]
         worse_candidates = sorted_candidates[:, 1:].flatten(0, 1)
         # [BATCH, 1]
-        dataset_embeddings = dataset_embeddings.unsqueeze(1).repeat(1,n_pipelines-1,1).flatten(0, 1)
+        dataset_embeddings = dataset_embeddings.unsqueeze(1).repeat(1, n_pipelines - 1, 1).flatten(0, 1)
         score_forward = self.comparator(better_candidates, worse_candidates, dataset_embeddings).squeeze(1)
         score_reversed = self.comparator(worse_candidates, better_candidates, dataset_embeddings).squeeze(1)
-        loss_forward = F.mse_loss(score_forward, torch.full_like(score_forward, fill_value=1.))
-        loss_reversed = F.mse_loss(score_reversed, torch.full_like(score_reversed, fill_value=-1.))
+        loss_forward = F.mse_loss(score_forward, torch.full_like(score_forward, fill_value=1.0))
+        loss_reversed = F.mse_loss(score_reversed, torch.full_like(score_reversed, fill_value=-1.0))
         loss = (loss_forward + loss_reversed) / 2
         self.log("train_loss", loss)
         return loss
@@ -157,7 +161,9 @@ class LateFusionComparator(BaseSurrogate):
 
         with torch.no_grad():
             # [BATCH, N, HIDDEN_1]
-            pipelines_embeddings = torch.stack([self.pipeline_encoder(h_p) for h_p in heterogen_pipelines]).permute(1,0,2)
+            pipelines_embeddings = torch.stack([self.pipeline_encoder(h_p) for h_p in heterogen_pipelines]).permute(
+                1, 0, 2
+            )
             # [BATCH, HIDDEN_2]
             dataset_embeddings = self.dataset_encoder(dataset)
             sorted_indices = bubble_argsort(self.comparator, pipelines_embeddings, self.device, dataset_embeddings)
@@ -178,4 +184,3 @@ class LateFusionComparator(BaseSurrogate):
         if "kendalltau" in self.validation_metrics:
             metric_fn = getattr(metrics_module, "kendalltau")
             self.log(f"{prefix}_kendalltau", metric_fn(y.cpu(), scores.cpu()))
-

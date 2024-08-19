@@ -3,8 +3,8 @@ from .models import GraphTransformer
 from .simple_graph_encoder import SimpleGNNEncoder
 
 __all__ = [
-    'GraphTransformer',
-    'MLPDatasetEncoder',
-    'SimpleGNNEncoder',
-    'ColumnDatasetEncoder',
+    "GraphTransformer",
+    "MLPDatasetEncoder",
+    "SimpleGNNEncoder",
+    "ColumnDatasetEncoder",
 ]

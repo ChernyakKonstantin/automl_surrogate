@@ -1,10 +1,14 @@
-import torch.nn.functional as F
-import torch.nn as nn
-from torch import Tensor
 import torch
+import torch.nn as nn
+import torch.nn.functional as F
+from torch import Tensor
+
 
 class DirectRanker(nn.Module):
-    def __init__(self, in_dim: int,):
+    def __init__(
+        self,
+        in_dim: int,
+    ):
         super().__init__()
         self.linear = nn.Linear(in_dim, 1, bias=False)
         self.out_dim = 1
@@ -16,7 +20,10 @@ class DirectRanker(nn.Module):
 
 
 class FusionDirectRanker(nn.Module):
-    def __init__(self, in_dim: int,):
+    def __init__(
+        self,
+        in_dim: int,
+    ):
         super().__init__()
         self.linear = nn.Linear(in_dim, 1, bias=False)
         self.out_dim = 1
