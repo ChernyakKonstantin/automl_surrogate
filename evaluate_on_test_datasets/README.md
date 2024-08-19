@@ -26,7 +26,7 @@ In all parsing scripts one should specify `--input_logfile <PATH>` and `--output
 
 ## Best Pipeline evaluation
 
-1. Run `fedot/evaluate.py --predefined_models_root <PATH>` to obtain a log-file. We provide selected best configurations in `fedot/best_pipelines.zip`
+1. Run `fedot/evaluate.py --predefined_models_root <PATH>` to obtain a log-file. We provide selected best configurations in `fedot/best_pipelines.zip` (file should be unzipped).
 2. Run `fedot/parsers/parse_best_pipeline_evaluation.py` to obtain a csv-file.
 
 ## Fedot w/o surrogate evaluation
