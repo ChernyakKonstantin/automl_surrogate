@@ -1,4 +1,4 @@
-"""This module summarizes log file of FEDOT evaluations w/ or w/o surrogate to a csv file."""
+"""This module summarizes log file of <ANON_FRAMEWORK> evaluations w/ or w/o surrogate to a csv file."""
 
 import argparse
 import re

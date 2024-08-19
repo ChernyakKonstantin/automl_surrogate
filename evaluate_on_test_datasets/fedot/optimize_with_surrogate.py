@@ -1,4 +1,4 @@
-"""This module contains FEDOT evaluation code and required changes to use a surrogate model."""
+"""This module contains <ANON_FRAMEWORK> evaluation code and required changes to use a surrogate model."""
 
 import os
 import pickle
@@ -8,13 +8,13 @@ from datetime import datetime
 from functools import partial
 from typing import Optional
 
-import fedot
+import <anon_framework>
 import numpy as np
 import pandas as pd
 import torch
 import yaml
-from fedot.api.main import Fedot
-from fedot.core.pipelines.adapters import PipelineAdapter
+from <anon_framework>.api.main import <Anon_framework>
+from <anon_framework>.core.pipelines.adapters import PipelineAdapter
 from golem.core.adapter import BaseOptimizationAdapter
 from golem.core.optimisers.genetic.evaluation import DelegateEvaluator
 from golem.core.optimisers.graph import OptGraph
@@ -26,13 +26,13 @@ from golem.core.optimisers.opt_history_objects.individual import GraphEvalResult
 from golem.core.optimisers.populational_optimizer import EvaluationAttemptsError, _try_unfit_graph
 
 from automl_surrogate.data.data_types import HeterogeneousBatch
-from automl_surrogate.data.fedot_pipeline_features_extractor import FEDOTPipelineFeaturesExtractor2
+from automl_surrogate.data.<anon_framework>_pipeline_features_extractor import <ANON_FRAMEWORK>PipelineFeaturesExtractor2
 from automl_surrogate.models import FusionRankNet
 
-if fedot.__version__ == "0.7.2":
-    from fedot.core.repository.quality_metrics_repository import ClassificationMetricsEnum
+if <anon_framework>.__version__ == "0.7.2":
+    from <anon_framework>.core.repository.quality_metrics_repository import ClassificationMetricsEnum
 else:
-    from fedot.core.repository.metrics_repository import ClassificationMetricsEnum
+    from <anon_framework>.core.repository.metrics_repository import ClassificationMetricsEnum
 
 
 class SurrogateDispatcher(SurrogateDispatcher_):
@@ -141,7 +141,7 @@ class SurrogatePipeline:
         ckpt_name: str,
     ):
         self.adapter = PipelineAdapter()
-        self.pipe_ext = FEDOTPipelineFeaturesExtractor2(operation_encoding="ordinal")
+        self.pipe_ext = <ANON_FRAMEWORK>PipelineFeaturesExtractor2(operation_encoding="ordinal")
 
         meta_features_scaler_path = os.path.join(ckpt_root, "scaler.pickle")
         with open(meta_features_scaler_path, "rb") as f:
@@ -193,7 +193,7 @@ def create_and_test_pipeline(
     if surrogate is not None:
         surrogate.set_dataset(dataset_name)
 
-    print("Creating FEDOT")
+    print("Creating <ANON_FRAMEWORK>")
     kwargs = dict(
         timeout=360,  # Non-default
         n_jobs=1,  # Non-default
@@ -224,8 +224,8 @@ def create_and_test_pipeline(
     if surrogate is not None:
         kwargs["optimizer"] = partial(SurrogateOptimizer, surrogate_model=surrogate)
 
-    model = Fedot(**kwargs, use_pipelines_cache=False, use_preprocessing_cache=False)
-    logger.info(f"Fitting FEDOT")
+    model = <Anon_framework>(**kwargs, use_pipelines_cache=False, use_preprocessing_cache=False)
+    logger.info(f"Fitting <ANON_FRAMEWORK>")
     t1 = time.time()
     if predefined_model is not None:
         _ = model.fit(features=x, target=y, predefined_model=predefined_model)
@@ -233,7 +233,7 @@ def create_and_test_pipeline(
         _ = model.fit(features=x, target=y)
     elapsed = time.time() - t1
     logger.info(f"Elapsed time {elapsed}")
-    logger.info(f"Predicting FEDOT")
+    logger.info(f"Predicting <ANON_FRAMEWORK>")
     model.predict(x_test)
     logger.info(f"Prediction on test: {model.get_metrics(target=y_test)}")
     logger.info("")

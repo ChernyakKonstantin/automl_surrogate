@@ -1,4 +1,4 @@
-"""Currently, this module contains information for available graphs only! TODO: extend to all possible Fedot nodes."""
+"""Currently, this module contains information for available graphs only! TODO: extend to all possible <Anon_framework> nodes."""
 
 # List of all possible operations
 OPERATIONS = [

@@ -26,18 +26,18 @@ In all parsing scripts one should specify `--input_logfile <PATH>` and `--output
 
 ## Best Pipeline evaluation
 
-1. Run `fedot/evaluate.py --predefined_models_root <PATH>` to obtain a log-file. We provide selected best configurations in `fedot/best_pipelines.zip` (file should be unzipped).
-2. Run `fedot/parsers/parse_best_pipeline_evaluation.py` to obtain a csv-file.
+1. Run `<anon_framework>/evaluate.py --predefined_models_root <PATH>` to obtain a log-file. We provide selected best configurations in `<anon_framework>/best_pipelines.zip` (file should be unzipped).
+2. Run `<anon_framework>/parsers/parse_best_pipeline_evaluation.py` to obtain a csv-file.
 
-## Fedot w/o surrogate evaluation
+## <Anon_framework> w/o surrogate evaluation
 
-1. Run `fedot/evaluate.py` to obtain a log-file.
-2. Run `fedot/parsers/parse_fedot_evaluation.py` to obtain a csv-file.
+1. Run `<anon_framework>/evaluate.py` to obtain a log-file.
+2. Run `<anon_framework>/parsers/parse_<anon_framework>_evaluation.py` to obtain a csv-file.
 
-## Fedot w/ surrogate evaluation
+## <Anon_framework> w/ surrogate evaluation
 
-1. Run `fedot/evaluate.py --surrogate_config_file <PATH>` to obtain a log-file.
-2. Run `fedot/parsers/parse_fedot_evaluation.py` to obtain a csv-file.
+1. Run `<anon_framework>/evaluate.py --surrogate_config_file <PATH>` to obtain a log-file.
+2. Run `<anon_framework>/parsers/parse_<anon_framework>_evaluation.py` to obtain a csv-file.
 
 ## Autogluon evaluation
 

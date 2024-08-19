@@ -1,4 +1,4 @@
-"""This module contains scripts to evaluate FEDOT framework w/ and w/o surrogate model, or evaluate a given pipleine."""
+"""This module contains scripts to evaluate <ANON_FRAMEWORK> framework w/ and w/o surrogate model, or evaluate a given pipleine."""
 
 import argparse
 import json
@@ -9,7 +9,7 @@ from pathlib import Path
 
 import numpy as np
 import yaml
-from fedot.core.pipelines.pipeline import Pipeline
+from <anon_framework>.core.pipelines.pipeline import Pipeline
 from optimize_with_surrogate import SurrogatePipeline, create_and_test_pipeline
 
 warnings.filterwarnings("ignore")
@@ -27,7 +27,7 @@ datasets = [
 ]
 
 
-def evaluate_fedot(
+def evaluate_<anon_framework>(
     logger,
     datasets_dir: str,
     dataset_name: str,
@@ -123,7 +123,7 @@ if __name__ == "__main__":
 
     for fold in range(10):
         for dataset_name in datasets:
-            evaluate_fedot(
+            evaluate_<anon_framework>(
                 logger,
                 args.datasets_root,
                 dataset_name,

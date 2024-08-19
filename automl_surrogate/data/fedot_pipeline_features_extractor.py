@@ -4,15 +4,15 @@ from typing import Any, Callable, Dict, List, Optional, Union
 
 import numpy as np
 import torch
-from fedot.core.pipelines.tuning.search_space import PipelineSearchSpace
-from fedot.core.repository.operation_types_repository import OperationTypesRepository
+from <anon_framework>.core.pipelines.tuning.search_space import PipelineSearchSpace
+from <anon_framework>.core.repository.operation_types_repository import OperationTypesRepository
 from torch_geometric.data import Data
 
 from .data_types import HeterogeneousData
 
 
-class FEDOTPipelineFeaturesExtractor:
-    """FEDOT pipeline features extractor.
+class <ANON_FRAMEWORK>PipelineFeaturesExtractor:
+    """<ANON_FRAMEWORK> pipeline features extractor.
 
     List of extracted features: directed adjacency matrix, nodes operation type, nodes hyperparameters.
 
@@ -200,7 +200,7 @@ class FEDOTPipelineFeaturesExtractor:
         return self._get_data(pipeline_json_string)
 
 
-class FEDOTPipelineFeaturesExtractor2(FEDOTPipelineFeaturesExtractor):
+class <ANON_FRAMEWORK>PipelineFeaturesExtractor2(<ANON_FRAMEWORK>PipelineFeaturesExtractor):
     def __init__(
         self,
         operation_encoding: Optional[str] = "ordinal",

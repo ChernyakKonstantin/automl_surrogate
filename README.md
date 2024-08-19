@@ -1,6 +1,6 @@
 # Installation
 ```
-pip install fedot==0.7.2
+pip install <anon_framework>==0.7.2
 pip install torch==1.13.1+cpu torchvision==0.14.1+cpu torchaudio==0.13.1 --extra-index-url https://download.pytorch.org/whl/cpu
 pip install torch_geometric==2.4.0
 pip install pytorch-lightning==2.0.5
